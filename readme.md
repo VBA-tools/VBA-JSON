@@ -6,7 +6,7 @@ Tested in Windows Excel 2013, but should apply to 2007+. For Mac support, includ
 
 # Example
 
-```
+```VB
 Dim JSON As Object
 Set JSON = JSONConverter.JSONParse("{""a"":123,""b"":[1,2,3,4],""c"":{""d"":456}}")
 
