@@ -2,7 +2,10 @@
 
 JSON conversion and parsing for VBA (Excel, Access, and other Office applications). It grew out of the excellent project [vba-json](https://code.google.com/p/vba-json/), with additions and improvements made to resolve bugs and improve performance (as part of [Excel-REST](https://github.com/timhall/Excel-REST)).
 
-Tested in Windows Excel 2013, but should apply to 2007+. For Mac support, include [VBA-Dictionary](https://github.com/timhall/VBA-Dictionary).
+Tested in Windows Excel 2013 and Excel for Mac 2011, but should apply to 2007+. 
+
+- For Windows-only support, include a reference to "Microsoft Scripting Runtime"
+- For Mac support or to skip adding a reference, include [VBA-Dictionary](https://github.com/timhall/VBA-Dictionary).
 
 # Example
 
