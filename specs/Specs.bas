@@ -8,7 +8,10 @@ Public Function Specs() As SpecSuite
     Dim JSONString As String
     Dim JSONObject As Object
     
-    ' ParseJSON
+    ' ============================================= '
+    ' Parse JSON
+    ' ============================================= '
+    
     With Specs.It("should parse object string")
         JSONString = "{""a"":1,""b"":3.14,""c"":""abc"",""d"":false,""e"":[1,3.14,""abc"",false,[1,2,3],{""a"":1}],""f"":{""a"":1},""g"":null}"
         Set JSONObject = JSONConverter.ParseJSON(JSONString)
@@ -69,7 +72,77 @@ Public Function Specs() As SpecSuite
         .Expect(JSONObject(2)).ToEqual 5
     End With
     
-    ' ConvertToJSON
+    With Specs.It("should parse escaped single quote in key and value")
+        ' Checks https://code.google.com/p/vba-json/issues/detail?id=2
+        JSONString = "{'a\'b':'c\'d'}"
+        Set JSONObject = JSONConverter.ParseJSON(JSONString)
+        
+        .Expect(JSONObject).ToNotBeUndefined
+        .Expect(JSONObject.Exists("a'b")).ToEqual True
+        .Expect(JSONObject("a'b")).ToEqual "c'd"
+    End With
+    
+    With Specs.It("should parse nested objects and arrays")
+        ' Checks https://code.google.com/p/vba-json/issues/detail?id=7
+        JSONString = "{""total_rows"":36778,""offset"":26220,""rows"":[" & vbNewLine & _
+            "{""id"":""6b80c0b76"",""key"":""a@bbb.net"",""value"":{""entryid"":""81151F241C2500"",""subject"":""test subject"",""senton"":""2009-7-09 22:03:43""}}," & vbNewLine & _
+            "{""id"":""b10ed9bee"",""key"":""b@bbb.net"",""value"":{""entryid"":""A7C3CF74EA95C9F"",""subject"":""test subject2"",""senton"":""2009-4-21 10:18:26""}}" & vbNewLine & _
+        "]}"
+        Set JSONObject = JSONConverter.ParseJSON(JSONString)
+        
+        .Expect(JSONObject).ToNotBeUndefined
+        .Expect(JSONObject("offset")).ToEqual 26220
+        .Expect(JSONObject("rows")(2)("key")).ToEqual "b@bbb.net"
+    End With
+    
+    With Specs.It("should handle very long numbers as strings (e.g. BIGINT)")
+        JSONString = "[123456789012345678901234567890, 1.123456789012345678901234567890]"
+        Set JSONObject = JSONConverter.ParseJSON(JSONString)
+        
+        .Expect(JSONObject).ToNotBeUndefined
+        .Expect(JSONObject(1)).ToEqual "123456789012345678901234567890"
+        .Expect(JSONObject(2)).ToEqual "1.123456789012345678901234567890"
+        
+        JSONString = "[123456789012345678901234567890]"
+        Set JSONObject = JSONConverter.ParseJSON(JSONString, False)
+        
+        .Expect(JSONObject).ToNotBeUndefined
+        .Expect(JSONObject(1)).ToEqual 1.23456789012346E+29
+    End With
+    
+    With Specs.It("should parse double-backslash as backslash")
+        ' Checks https://code.google.com/p/vba-json/issues/detail?id=11
+        JSONString = "[""C:\\folder\\picture.jpg""]"
+        Set JSONObject = JSONConverter.ParseJSON(JSONString)
+        
+        .Expect(JSONObject).ToNotBeUndefined
+        .Expect(JSONObject(1)).ToEqual "C:\folder\picture.jpg"
+    End With
+    
+    With Specs.It("should allow keys and values with colons")
+        ' Checks https://code.google.com/p/vba-json/issues/detail?id=14
+        JSONString = "{""a:b"":""c:d""}"
+        Set JSONObject = JSONConverter.ParseJSON(JSONString)
+        
+        .Expect(JSONObject).ToNotBeUndefined
+        .Expect(JSONObject.Exists("a:b")).ToEqual True
+        .Expect(JSONObject("a:b")).ToEqual "c:d"
+    End With
+    
+    With Specs.It("should allow spaces in keys")
+        ' Checks https://code.google.com/p/vba-json/issues/detail?id=19
+        JSONString = "{""a b  c"":""d e  f""}"
+        Set JSONObject = JSONConverter.ParseJSON(JSONString)
+        
+        .Expect(JSONObject).ToNotBeUndefined
+        .Expect(JSONObject.Exists("a b  c")).ToEqual True
+        .Expect(JSONObject("a b  c")).ToEqual "d e  f"
+    End With
+    
+    ' ============================================= '
+    ' ConvertTOJSON
+    ' ============================================= '
+    
     With Specs.It("should convert object to string")
         Set JSONObject = New Dictionary
         JSONObject.Add "a", 1
@@ -112,7 +185,18 @@ Public Function Specs() As SpecSuite
         .Expect(JSONString).ToEqual "[1,3.14,""abc"",false,[1,2,3]]"
     End With
     
+    With Specs.It("should convert very long numbers as strings (e.g. BIGINT)")
+        JSONString = JSONConverter.ConvertToJSON(Array("123456789012345678901234567890", "1.123456789012345678901234567890", "1234567890123456F"))
+        .Expect(JSONString).ToEqual "[123456789012345678901234567890,1.123456789012345678901234567890,""1234567890123456F""]"
+        
+        JSONString = JSONConverter.ConvertToJSON(Array("123456789012345678901234567890"), False)
+        .Expect(JSONString).ToEqual "[""123456789012345678901234567890""]"
+    End With
+    
+    ' ============================================= '
     ' Errors
+    ' ============================================= '
+    
     With Specs.It("should have descriptive parsing errors")
         Err.Clear
         JSONString = "Howdy!"
@@ -141,6 +225,15 @@ Public Function Specs() As SpecSuite
     
     InlineRunner.RunSuite Specs
 End Function
+
+Public Sub RunSpecs()
+    DisplayRunner.IdCol = 1
+    DisplayRunner.DescCol = 1
+    DisplayRunner.ResultCol = 2
+    DisplayRunner.OutputStartRow = 4
+    
+    DisplayRunner.RunSuite Specs
+End Sub
 
 Public Function ToMatchParseError(Actual As Variant, Args As Variant) As Variant
     Dim Partial As String

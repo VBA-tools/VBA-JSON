@@ -23,7 +23,7 @@ Attribute VB_Name = "JSONConverter"
 ' @param {String} JSON_String
 ' @return {Object} (Dictionary or Collection)
 ' -------------------------------------- '
-Public Function ParseJSON(ByVal JSON_String As String) As Object
+Public Function ParseJSON(ByVal JSON_String As String, Optional JSON_ConvertLargeNumbersToString As Boolean = True) As Object
     Dim JSON_Index As Long
     JSON_Index = 1
     
@@ -33,9 +33,9 @@ Public Function ParseJSON(ByVal JSON_String As String) As Object
     JSON_SkipSpaces JSON_String, JSON_Index
     Select Case Mid$(JSON_String, JSON_Index, 1)
     Case "{"
-        Set ParseJSON = JSON_ParseObject(JSON_String, JSON_Index)
+        Set ParseJSON = JSON_ParseObject(JSON_String, JSON_Index, JSON_ConvertLargeNumbersToString)
     Case "["
-        Set ParseJSON = JSON_ParseArray(JSON_String, JSON_Index)
+        Set ParseJSON = JSON_ParseArray(JSON_String, JSON_Index, JSON_ConvertLargeNumbersToString)
     Case Else
         ' Error: Invalid JSON string
         Err.Raise 10001, "JSONConverter", JSON_ParseErrorMessage(JSON_String, JSON_Index, "Expecting '{' or '['")
@@ -48,7 +48,7 @@ End Function
 ' @param {Variant} JSON_DictionaryCollectionOrArray (Dictionary, Collection, or Array)
 ' @return {String}
 ' -------------------------------------- '
-Public Function ConvertToJSON(ByVal JSON_DictionaryCollectionOrArray As Variant) As String
+Public Function ConvertToJSON(ByVal JSON_DictionaryCollectionOrArray As Variant, Optional JSON_ConvertLargeNumbersFromString As Boolean = True) As String
     Dim JSON_Buffer As String
     Dim JSON_Index As Long
     Dim JSON_LBound As Long
@@ -66,7 +66,11 @@ Public Function ConvertToJSON(ByVal JSON_DictionaryCollectionOrArray As Variant)
     Case vbDate
         ConvertToJSON = """" & CStr(JSON_DictionaryCollectionOrArray) & """"
     Case vbString
-        ConvertToJSON = """" & JSON_Encode(JSON_DictionaryCollectionOrArray) & """"
+        If JSON_ConvertLargeNumbersFromString And JSON_StringIsLargeNumber(JSON_DictionaryCollectionOrArray) Then
+            ConvertToJSON = JSON_DictionaryCollectionOrArray
+        Else
+            ConvertToJSON = """" & JSON_Encode(JSON_DictionaryCollectionOrArray) & """"
+        End If
     Case vbBoolean
         If JSON_DictionaryCollectionOrArray Then
             ConvertToJSON = "true"
@@ -74,12 +78,13 @@ Public Function ConvertToJSON(ByVal JSON_DictionaryCollectionOrArray As Variant)
             ConvertToJSON = "false"
         End If
     Case vbVariant, vbArray, vbArray + vbVariant
+        JSON_BufferAppend JSON_Buffer, "["
+        
         On Error Resume Next
+        
         JSON_LBound = LBound(JSON_DictionaryCollectionOrArray)
         JSON_UBound = UBound(JSON_DictionaryCollectionOrArray)
-        On Error GoTo 0
         
-        JSON_BufferAppend JSON_Buffer, "["
         If JSON_LBound >= 0 And JSON_UBound >= 0 Then
             For JSON_Index = JSON_LBound To JSON_UBound
                 If JSON_IsFirstItem Then
@@ -88,9 +93,12 @@ Public Function ConvertToJSON(ByVal JSON_DictionaryCollectionOrArray As Variant)
                     JSON_BufferAppend JSON_Buffer, ","
                 End If
                 
-                JSON_BufferAppend JSON_Buffer, ConvertToJSON(JSON_DictionaryCollectionOrArray(JSON_Index))
+                JSON_BufferAppend JSON_Buffer, ConvertToJSON(JSON_DictionaryCollectionOrArray(JSON_Index), JSON_ConvertLargeNumbersFromString)
             Next JSON_Index
         End If
+        
+        On Error GoTo 0
+        
         JSON_BufferAppend JSON_Buffer, "]"
         
         ConvertToJSON = JSON_BufferToString(JSON_Buffer)
@@ -104,7 +112,7 @@ Public Function ConvertToJSON(ByVal JSON_DictionaryCollectionOrArray As Variant)
                     JSON_BufferAppend JSON_Buffer, ","
                 End If
             
-                JSON_BufferAppend JSON_Buffer, """" & JSON_Key & """:" & ConvertToJSON(JSON_DictionaryCollectionOrArray(JSON_Key))
+                JSON_BufferAppend JSON_Buffer, """" & JSON_Key & """:" & ConvertToJSON(JSON_DictionaryCollectionOrArray(JSON_Key), JSON_ConvertLargeNumbersFromString)
             Next JSON_Key
             JSON_BufferAppend JSON_Buffer, "}"
         ElseIf TypeName(JSON_DictionaryCollectionOrArray) = "Collection" Then
@@ -124,8 +132,9 @@ Public Function ConvertToJSON(ByVal JSON_DictionaryCollectionOrArray As Variant)
         ConvertToJSON = JSON_BufferToString(JSON_Buffer)
     Case Else
         ' Number
-        ' Note: For cases where commas are used in place of decimals, replace with decimals
-        ConvertToJSON = Replace(JSON_DictionaryCollectionOrArray, ",", ".")
+        On Error Resume Next
+        ConvertToJSON = JSON_DictionaryCollectionOrArray
+        On Error GoTo 0
     End Select
 End Function
 
@@ -133,7 +142,7 @@ End Function
 ' Private Functions
 ' ============================================= '
 
-Private Function JSON_ParseObject(JSON_String As String, ByRef JSON_Index As Long) As Dictionary
+Private Function JSON_ParseObject(JSON_String As String, ByRef JSON_Index As Long, Optional JSON_ConvertLargeNumbersToString As Boolean = True) As Dictionary
     Dim JSON_Key As String
     Dim JSON_NextChar As String
     
@@ -157,15 +166,15 @@ Private Function JSON_ParseObject(JSON_String As String, ByRef JSON_Index As Lon
             JSON_Key = JSON_ParseKey(JSON_String, JSON_Index)
             JSON_NextChar = JSON_Peek(JSON_String, JSON_Index)
             If "{" = JSON_NextChar Or "[" = JSON_NextChar Then
-                Set JSON_ParseObject.Item(JSON_Key) = JSON_ParseValue(JSON_String, JSON_Index)
+                Set JSON_ParseObject.Item(JSON_Key) = JSON_ParseValue(JSON_String, JSON_Index, JSON_ConvertLargeNumbersToString)
             Else
-                JSON_ParseObject.Item(JSON_Key) = JSON_ParseValue(JSON_String, JSON_Index)
+                JSON_ParseObject.Item(JSON_Key) = JSON_ParseValue(JSON_String, JSON_Index, JSON_ConvertLargeNumbersToString)
             End If
         Loop
     End If
 End Function
 
-Private Function JSON_ParseArray(JSON_String As String, ByRef JSON_Index As Long) As Collection
+Private Function JSON_ParseArray(JSON_String As String, ByRef JSON_Index As Long, Optional JSON_ConvertLargeNumbersToString As Boolean = True) As Collection
     Set JSON_ParseArray = New Collection
     
     JSON_SkipSpaces JSON_String, JSON_Index
@@ -184,12 +193,12 @@ Private Function JSON_ParseArray(JSON_String As String, ByRef JSON_Index As Long
                 JSON_SkipSpaces JSON_String, JSON_Index
             End If
             
-            JSON_ParseArray.Add JSON_ParseValue(JSON_String, JSON_Index)
+            JSON_ParseArray.Add JSON_ParseValue(JSON_String, JSON_Index, JSON_ConvertLargeNumbersToString)
         Loop
     End If
 End Function
 
-Private Function JSON_ParseValue(JSON_String As String, ByRef JSON_Index As Long) As Variant
+Private Function JSON_ParseValue(JSON_String As String, ByRef JSON_Index As Long, Optional JSON_ConvertLargeNumbersToString As Boolean = True) As Variant
     JSON_SkipSpaces JSON_String, JSON_Index
     Select Case Mid$(JSON_String, JSON_Index, 1)
     Case "{"
@@ -209,7 +218,7 @@ Private Function JSON_ParseValue(JSON_String As String, ByRef JSON_Index As Long
             JSON_ParseValue = Null
             JSON_Index = JSON_Index + 4
         ElseIf InStr("0123456789", Mid$(JSON_String, JSON_Index, 1)) Then
-            JSON_ParseValue = JSON_ParseNumber(JSON_String, JSON_Index)
+            JSON_ParseValue = JSON_ParseNumber(JSON_String, JSON_Index, JSON_ConvertLargeNumbersToString)
         Else
             Err.Raise 10001, "JSONConverter", JSON_ParseErrorMessage(JSON_String, JSON_Index, "Expecting 'STRING', 'NUMBER', null, true, false, '{', or '['")
         End If
@@ -238,7 +247,7 @@ Private Function JSON_ParseString(JSON_String As String, ByRef JSON_Index As Lon
             JSON_Char = Mid$(JSON_String, JSON_Index, 1)
             
             Select Case JSON_Char
-            Case """", "\", "/"
+            Case """", "\", "/", "'"
                 JSON_BufferAppend JSON_Buffer, JSON_Char
                 JSON_Index = JSON_Index + 1
             Case "b"
@@ -274,7 +283,7 @@ Private Function JSON_ParseString(JSON_String As String, ByRef JSON_Index As Lon
     Loop
 End Function
 
-Private Function JSON_ParseNumber(JSON_String As String, ByRef JSON_Index As Long) As Variant
+Private Function JSON_ParseNumber(JSON_String As String, ByRef JSON_Index As Long, Optional JSON_ConvertLargeNumbersToString As Boolean = True) As Variant
     Dim JSON_Char As String
     Dim JSON_Value As String
     
@@ -288,8 +297,16 @@ Private Function JSON_ParseNumber(JSON_String As String, ByRef JSON_Index As Lon
             JSON_Value = JSON_Value & JSON_Char
             JSON_Index = JSON_Index + 1
         Else
-            ' TODO Look into more detailed number parsing
-            JSON_ParseNumber = Val(JSON_Value)
+            ' Excel only stores 15 significant digits, so any numbers larger than that are truncated
+            ' This can lead to issues when BIGINT's are used for Ids, as they will be invalid above 15 digits
+            ' See: http://support.microsoft.com/kb/269370
+            '
+            ' Fix: Parse -> String, Convert -> String longer than 15 characters containing only numbers and decimals points -> Number
+            If JSON_ConvertLargeNumbersToString And Len(JSON_Value) >= 16 Then
+                JSON_ParseNumber = JSON_Value
+            Else
+                JSON_ParseNumber = Val(JSON_Value)
+            End If
             Exit Function
         End If
     Loop
@@ -321,6 +338,30 @@ Private Sub JSON_SkipSpaces(JSON_String As String, ByRef JSON_Index As Long)
         JSON_Index = JSON_Index + 1
     Loop
 End Sub
+
+Private Function JSON_StringIsLargeNumber(JSON_String As Variant) As Boolean
+    Dim JSON_Length As Long
+    JSON_Length = Len(JSON_String)
+    If JSON_Length >= 16 Then
+        Dim JSON_CharCode As String
+        Dim JSON_Index As Long
+        
+        JSON_StringIsLargeNumber = True
+        
+        For i = 1 To JSON_Length
+            JSON_CharCode = Asc(Mid$(JSON_String, i, 1))
+            Select Case JSON_CharCode
+            ' Look for .|0-9|E|e
+            Case 46, 48 To 57, 69, 101
+                ' Continue through characters
+            Case Else
+                JSON_StringIsLargeNumber = False
+                Exit Function
+            End Select
+        Next i
+        
+    End If
+End Function
 
 Private Sub JSON_BufferAppend(ByRef JSON_Buffer As String, ByRef JSON_Append As String)
     ' TODO Convert to direct memory buffer

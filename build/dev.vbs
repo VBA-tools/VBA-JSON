@@ -38,7 +38,7 @@ Src = Array( _
 
 Dim Specs
 Specs = Array( _
-  "Specs.bas", _
+  "Specs.bas" _
 )
 
 Main
