@@ -45,6 +45,15 @@ Attribute VB_Name = "JSONConverter"
 '
 ' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ '
 
+#If Mac Then
+#ElseIf Win64 Then
+Private Declare PtrSafe Sub JSON_CopyMemory Lib "kernel32" Alias "RtlMoveMemory" _
+    (JSON_MemoryDestination As Any, JSON_MemorySource As Any, ByVal JSON_ByteLength As Long)
+#Else
+Private Declare Sub JSON_CopyMemory Lib "kernel32" Alias "RtlMoveMemory" _
+    (JSON_MemoryDestination As Any, JSON_MemorySource As Any, ByVal JSON_ByteLength As Long)
+#End If
+
 ' ============================================= '
 ' Public Methods
 ' ============================================= '
@@ -82,6 +91,8 @@ End Function
 ' -------------------------------------- '
 Public Function ConvertToJSON(ByVal JSON_DictionaryCollectionOrArray As Variant, Optional JSON_ConvertLargeNumbersFromString As Boolean = True) As String
     Dim JSON_Buffer As String
+    Dim JSON_BufferPosition As Long
+    Dim JSON_BufferLength As Long
     Dim JSON_Index As Long
     Dim JSON_LBound As Long
     Dim JSON_UBound As Long
@@ -91,13 +102,13 @@ Public Function ConvertToJSON(ByVal JSON_DictionaryCollectionOrArray As Variant,
     JSON_IsFirstItem = True
 
     Select Case VarType(JSON_DictionaryCollectionOrArray)
-    Case vbNull
-        ConvertToJSON = "null"
-    Case vbEmpty
+    Case vbNull, vbEmpty
         ConvertToJSON = "null"
     Case vbDate
+        ' TODO Verify date formatting
         ConvertToJSON = """" & CStr(JSON_DictionaryCollectionOrArray) & """"
     Case vbString
+        ' String (or large number encoded as string)
         If JSON_ConvertLargeNumbersFromString And JSON_StringIsLargeNumber(JSON_DictionaryCollectionOrArray) Then
             ConvertToJSON = JSON_DictionaryCollectionOrArray
         Else
@@ -109,8 +120,10 @@ Public Function ConvertToJSON(ByVal JSON_DictionaryCollectionOrArray As Variant,
         Else
             ConvertToJSON = "false"
         End If
+    
     Case vbVariant, vbArray, vbArray + vbVariant
-        JSON_BufferAppend JSON_Buffer, "["
+        ' Array
+        JSON_BufferAppend JSON_Buffer, "[", JSON_BufferPosition, JSON_BufferLength
         
         On Error Resume Next
         
@@ -122,46 +135,57 @@ Public Function ConvertToJSON(ByVal JSON_DictionaryCollectionOrArray As Variant,
                 If JSON_IsFirstItem Then
                     JSON_IsFirstItem = False
                 Else
-                    JSON_BufferAppend JSON_Buffer, ","
+                    JSON_BufferAppend JSON_Buffer, ",", JSON_BufferPosition, JSON_BufferLength
                 End If
                 
-                JSON_BufferAppend JSON_Buffer, ConvertToJSON(JSON_DictionaryCollectionOrArray(JSON_Index), JSON_ConvertLargeNumbersFromString)
+                JSON_BufferAppend JSON_Buffer, _
+                    ConvertToJSON(JSON_DictionaryCollectionOrArray(JSON_Index), JSON_ConvertLargeNumbersFromString), _
+                    JSON_BufferPosition, JSON_BufferLength
             Next JSON_Index
         End If
         
         On Error GoTo 0
         
-        JSON_BufferAppend JSON_Buffer, "]"
+        JSON_BufferAppend JSON_Buffer, "]", JSON_BufferPosition, JSON_BufferLength
         
-        ConvertToJSON = JSON_BufferToString(JSON_Buffer)
+        ConvertToJSON = JSON_BufferToString(JSON_Buffer, JSON_BufferPosition, JSON_BufferLength)
+    
+    ' Dictionary or Collection
     Case vbObject
+        ' Dictionary
         If TypeName(JSON_DictionaryCollectionOrArray) = "Dictionary" Then
-            JSON_BufferAppend JSON_Buffer, "{"
+            JSON_BufferAppend JSON_Buffer, "{", JSON_BufferPosition, JSON_BufferLength
             For Each JSON_Key In JSON_DictionaryCollectionOrArray.Keys
                 If JSON_IsFirstItem Then
                     JSON_IsFirstItem = False
                 Else
-                    JSON_BufferAppend JSON_Buffer, ","
+                    JSON_BufferAppend JSON_Buffer, ",", JSON_BufferPosition, JSON_BufferLength
                 End If
             
-                JSON_BufferAppend JSON_Buffer, """" & JSON_Key & """:" & ConvertToJSON(JSON_DictionaryCollectionOrArray(JSON_Key), JSON_ConvertLargeNumbersFromString)
+                JSON_BufferAppend JSON_Buffer, _
+                    """" & JSON_Key & """:" & ConvertToJSON(JSON_DictionaryCollectionOrArray(JSON_Key), JSON_ConvertLargeNumbersFromString), _
+                    JSON_BufferPosition, JSON_BufferLength
             Next JSON_Key
-            JSON_BufferAppend JSON_Buffer, "}"
+            JSON_BufferAppend JSON_Buffer, "}", JSON_BufferPosition, JSON_BufferLength
+        
+        ' Collection
         ElseIf TypeName(JSON_DictionaryCollectionOrArray) = "Collection" Then
-            JSON_BufferAppend JSON_Buffer, "["
+            JSON_BufferAppend JSON_Buffer, "[", JSON_BufferPosition, JSON_BufferLength
             For Each JSON_Value In JSON_DictionaryCollectionOrArray
                 If JSON_IsFirstItem Then
                     JSON_IsFirstItem = False
                 Else
-                    JSON_BufferAppend JSON_Buffer, ","
+                    JSON_BufferAppend JSON_Buffer, ",", JSON_BufferPosition, JSON_BufferLength
                 End If
             
-                JSON_BufferAppend JSON_Buffer, ConvertToJSON(JSON_Value)
+                JSON_BufferAppend JSON_Buffer, _
+                    ConvertToJSON(JSON_Value, JSON_ConvertLargeNumbersFromString), _
+                    JSON_BufferPosition, JSON_BufferLength
             Next JSON_Value
-            JSON_BufferAppend JSON_Buffer, "]"
+            JSON_BufferAppend JSON_Buffer, "]", JSON_BufferPosition, JSON_BufferLength
         End If
         
-        ConvertToJSON = JSON_BufferToString(JSON_Buffer)
+        ConvertToJSON = JSON_BufferToString(JSON_Buffer, JSON_BufferPosition, JSON_BufferLength)
     Case Else
         ' Number
         On Error Resume Next
@@ -262,6 +286,8 @@ Private Function JSON_ParseString(JSON_String As String, ByRef JSON_Index As Lon
     Dim JSON_Char As String
     Dim JSON_Code As String
     Dim JSON_Buffer As String
+    Dim JSON_BufferPosition As Long
+    Dim JSON_BufferLength As Long
     
     JSON_SkipSpaces JSON_String, JSON_Index
     
@@ -280,36 +306,36 @@ Private Function JSON_ParseString(JSON_String As String, ByRef JSON_Index As Lon
             
             Select Case JSON_Char
             Case """", "\", "/", "'"
-                JSON_BufferAppend JSON_Buffer, JSON_Char
+                JSON_BufferAppend JSON_Buffer, JSON_Char, JSON_BufferPosition, JSON_BufferLength
                 JSON_Index = JSON_Index + 1
             Case "b"
-                JSON_BufferAppend JSON_Buffer, vbBack
+                JSON_BufferAppend JSON_Buffer, vbBack, JSON_BufferPosition, JSON_BufferLength
                 JSON_Index = JSON_Index + 1
             Case "f"
-                JSON_BufferAppend JSON_Buffer, vbFormFeed
+                JSON_BufferAppend JSON_Buffer, vbFormFeed, JSON_BufferPosition, JSON_BufferLength
                 JSON_Index = JSON_Index + 1
             Case "n"
-                JSON_BufferAppend JSON_Buffer, vbCrLf
+                JSON_BufferAppend JSON_Buffer, vbCrLf, JSON_BufferPosition, JSON_BufferLength
                 JSON_Index = JSON_Index + 1
             Case "r"
-                JSON_BufferAppend JSON_Buffer, vbCr
+                JSON_BufferAppend JSON_Buffer, vbCr, JSON_BufferPosition, JSON_BufferLength
                 JSON_Index = JSON_Index + 1
             Case "t"
-                JSON_BufferAppend JSON_Buffer, vbTab
+                JSON_BufferAppend JSON_Buffer, vbTab, JSON_BufferPosition, JSON_BufferLength
                 JSON_Index = JSON_Index + 1
             Case "u"
                 ' Unicode character escape (e.g. \u00a9 = Copyright)
                 JSON_Index = JSON_Index + 1
                 JSON_Code = Mid$(JSON_String, JSON_Index, 4)
-                JSON_BufferAppend JSON_Buffer, ChrW(Val("&h" + JSON_Code))
+                JSON_BufferAppend JSON_Buffer, ChrW(Val("&h" + JSON_Code)), JSON_BufferPosition, JSON_BufferLength
                 JSON_Index = JSON_Index + 4
             End Select
         Case JSON_Quote
-            JSON_ParseString = JSON_BufferToString(JSON_Buffer)
+            JSON_ParseString = JSON_BufferToString(JSON_Buffer, JSON_BufferPosition, JSON_BufferLength)
             JSON_Index = JSON_Index + 1
             Exit Function
         Case Else
-            JSON_BufferAppend JSON_Buffer, JSON_Char
+            JSON_BufferAppend JSON_Buffer, JSON_Char, JSON_BufferPosition, JSON_BufferLength
             JSON_Index = JSON_Index + 1
         End Select
     Loop
@@ -330,10 +356,10 @@ Private Function JSON_ParseNumber(JSON_String As String, ByRef JSON_Index As Lon
             JSON_Index = JSON_Index + 1
         Else
             ' Excel only stores 15 significant digits, so any numbers larger than that are truncated
-            ' This can lead to issues when BIGINT's are used for Ids, as they will be invalid above 15 digits
+            ' This can lead to issues when BIGINT's are used (e.g. for Ids or Credit Cards), as they will be invalid above 15 digits
             ' See: http://support.microsoft.com/kb/269370
             '
-            ' Fix: Parse -> String, Convert -> String longer than 15 characters containing only numbers and decimals points -> Number
+            ' Fix: Parse -> String, Convert -> String longer than 15 characters containing only numbers and decimal points -> Number
             If JSON_ConvertLargeNumbersToString And Len(JSON_Value) >= 16 Then
                 JSON_ParseNumber = JSON_Value
             Else
@@ -345,8 +371,10 @@ Private Function JSON_ParseNumber(JSON_String As String, ByRef JSON_Index As Lon
 End Function
 
 Private Function JSON_ParseKey(JSON_String As String, ByRef JSON_Index As Long) As String
+    ' Parse key with single or double quotes
     JSON_ParseKey = JSON_ParseString(JSON_String, JSON_Index)
     
+    ' Check for colon and skip if present or throw if not present
     JSON_SkipSpaces JSON_String, JSON_Index
     If Mid$(JSON_String, JSON_Index, 1) <> ":" Then
         Err.Raise 10001, "JSONConverter", JSON_ParseErrorMessage(JSON_String, JSON_Index, "Expecting ':'")
@@ -356,10 +384,12 @@ Private Function JSON_ParseKey(JSON_String As String, ByRef JSON_Index As Long) 
 End Function
 
 Private Function JSON_Encode(ByVal JSON_Text As Variant) As String
+    ' TODO
     JSON_Encode = JSON_Text
 End Function
 
 Private Function JSON_Peek(JSON_String As String, ByVal JSON_Index As Long, Optional JSON_NumberOfCharacters As Long = 1) As String
+    ' "Peek" at the next number of characters without incrementing JSON_Index (ByVal instead of ByRef)
     JSON_SkipSpaces JSON_String, JSON_Index
     JSON_Peek = Mid$(JSON_String, JSON_Index, JSON_NumberOfCharacters)
 End Function
@@ -372,9 +402,14 @@ Private Sub JSON_SkipSpaces(JSON_String As String, ByRef JSON_Index As Long)
 End Sub
 
 Private Function JSON_StringIsLargeNumber(JSON_String As Variant) As Boolean
+    ' Check if the given string is considered a "large number"
+    ' (See JSON_ParseNumber)
+    
     Dim JSON_Length As Long
     JSON_Length = Len(JSON_String)
-    If JSON_Length >= 16 Then
+    
+    ' Length with be at least 16 characters and assume will be less than 100 characters
+    If JSON_Length >= 16 And JSON_Length <= 100 Then
         Dim JSON_CharCode As String
         Dim JSON_Index As Long
         
@@ -391,24 +426,22 @@ Private Function JSON_StringIsLargeNumber(JSON_String As Variant) As Boolean
                 Exit Function
             End Select
         Next i
-        
     End If
 End Function
 
-Private Sub JSON_BufferAppend(ByRef JSON_Buffer As String, ByRef JSON_Append As String)
-    ' TODO Convert to direct memory buffer
-    JSON_Buffer = JSON_Buffer & JSON_Append
-End Sub
-
-Private Function JSON_BufferToString(ByRef JSON_Buffer As String) As String
-    ' TODO Convert to direct memory buffer
-    JSON_BufferToString = JSON_Buffer
-End Function
-
 Private Function JSON_ParseErrorMessage(JSON_String As String, ByRef JSON_Index As Long, ErrorMessage As String)
+    ' Provide detailed parse error message, including details of where and what occurred
+    '
+    ' Example:
+    ' Error parsing JSON:
+    ' {"abcde":True}
+    '          ^
+    ' Expecting 'STRING', 'NUMBER', null, true, false, '{', or '['
+    
     Dim JSON_StartIndex As Long
     Dim JSON_StopIndex As Long
     
+    ' Include 10 characters before and after error (if possible)
     JSON_StartIndex = JSON_Index - 10
     JSON_StopIndex = JSON_Index + 10
     If JSON_StartIndex <= 0 Then
@@ -422,4 +455,92 @@ Private Function JSON_ParseErrorMessage(JSON_String As String, ByRef JSON_Index 
                              Mid$(JSON_String, JSON_StartIndex, JSON_StopIndex - JSON_StartIndex + 1) & vbNewLine & _
                              VBA.Space$(JSON_Index - JSON_StartIndex) & "^" & vbNewLine & _
                              ErrorMessage
+End Function
+
+Private Sub JSON_BufferAppend(ByRef JSON_Buffer As String, _
+                              ByRef JSON_Append As String, _
+                              ByRef JSON_BufferPosition As Long, _
+                              ByRef JSON_BufferLength As Long)
+#If Mac Then
+    JSON_Buffer = JSON_Buffer & JSON_Append
+#Else
+    ' VBA can be slow to append strings due to allocating a new string for each append
+    ' Instead of using the traditional append, allocate a large empty string and then copy string at append position
+    '
+    ' Example:
+    ' Buffer: "abc  "
+    ' Append: "def"
+    ' Buffer Position: 3
+    ' Buffer Length: 5
+    '
+    ' Buffer position + Append length > Buffer length -> Append chunk of blank space to buffer
+    ' Buffer: "abc       "
+    ' Buffer Length: 10
+    '
+    ' Copy memory for "def" into buffer at position 3 (0-based)
+    ' Buffer: "abcdef    "
+    '
+    ' Approach based on cStringBuilder from vbAccelerator
+    ' http://www.vbaccelerator.com/home/VB/Code/Techniques/RunTime_Debug_Tracing/VB6_Tracer_Utility_zip_cStringBuilder_cls.asp
+
+    Dim JSON_AppendLength As Long
+    Dim JSON_LengthPlusPosition As Long
+    
+    JSON_AppendLength = LenB(JSON_Append)
+    JSON_LengthPlusPosition = JSON_AppendLength + JSON_BufferPosition
+    
+    If JSON_LengthPlusPosition > JSON_BufferLength Then
+        ' Appending would overflow buffer, add chunks until buffer is long enough
+        Dim JSON_TemporaryLength As Long
+        
+        JSON_TemporaryLength = JSON_BufferLength
+        Do While JSON_TemporaryLength < JSON_LengthPlusPosition
+            ' Initially, initialize string with 255 characters,
+            ' then add large chunks (8192) after that
+            '
+            ' Size: # Characters x 2 bytes / character
+            If JSON_TemporaryLength = 0 Then
+                JSON_TemporaryLength = JSON_TemporaryLength + 510
+            Else
+                JSON_TemporaryLength = JSON_TemporaryLength + 16384
+            End If
+        Loop
+        
+        JSON_Buffer = JSON_Buffer & Space$((JSON_TemporaryLength - JSON_BufferLength) \ 2)
+        JSON_BufferLength = JSON_TemporaryLength
+    End If
+    
+    ' Copy memory from append to buffer at buffer position
+    JSON_CopyMemory ByVal JSON_UnsignedAdd(StrPtr(JSON_Buffer), _
+                    JSON_BufferPosition), _
+                    ByVal StrPtr(JSON_Append), _
+                    JSON_AppendLength
+    
+    JSON_BufferPosition = JSON_BufferPosition + JSON_AppendLength
+#End If
+End Sub
+
+Private Function JSON_BufferToString(ByRef JSON_Buffer As String, ByVal JSON_BufferPosition As Long, ByVal JSON_BufferLength As Long) As String
+#If Mac Then
+    JSON_BufferToString = JSON_Buffer
+#Else
+    If JSON_BufferPosition > 0 Then
+        JSON_BufferToString = Left$(JSON_Buffer, JSON_BufferPosition \ 2)
+    End If
+#End If
+End Function
+
+#If Win64 Then
+Private Function JSON_UnsignedAdd(JSON_Start As LongPtr, JSON_Increment As Long) As LongPtr
+#Else
+Private Function JSON_UnsignedAdd(JSON_Start As Long, JSON_Increment As Long) As Long
+#End If
+
+    If JSON_Start And &H80000000 Then
+        JSON_UnsignedAdd = JSON_Start + JSON_Increment
+    ElseIf (JSON_Start Or &H80000000) < -JSON_Increment Then
+        JSON_UnsignedAdd = JSON_Start + JSON_Increment
+    Else
+        JSON_UnsignedAdd = (JSON_Start + &H80000000) + (JSON_Increment + &H80000000)
+    End If
 End Function
