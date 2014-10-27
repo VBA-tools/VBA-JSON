@@ -193,6 +193,18 @@ Public Function Specs() As SpecSuite
         .Expect(JSONString).ToEqual "[""123456789012345678901234567890""]"
     End With
     
+    With Specs.It("should convert 2D arrays")
+        ' Checks https://code.google.com/p/vba-json/issues/detail?id=8
+        Dim MultiDimensionalArray(1, 1) As Variant
+        MultiDimensionalArray(0, 0) = 1
+        MultiDimensionalArray(0, 1) = 2
+        MultiDimensionalArray(1, 0) = 3
+        MultiDimensionalArray(1, 1) = 4
+        
+        JSONString = JSONConverter.ConvertToJSON(MultiDimensionalArray)
+        .Expect(JSONString).ToEqual "[[1,2],[3,4]]"
+    End With
+    
     ' ============================================= '
     ' Errors
     ' ============================================= '
