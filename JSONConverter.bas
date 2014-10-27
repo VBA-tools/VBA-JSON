@@ -305,7 +305,7 @@ Private Function JSON_ParseValue(JSON_String As String, ByRef JSON_Index As Long
         ElseIf VBA.Mid$(JSON_String, JSON_Index, 4) = "null" Then
             JSON_ParseValue = Null
             JSON_Index = JSON_Index + 4
-        ElseIf VBA.InStr("0123456789", VBA.Mid$(JSON_String, JSON_Index, 1)) Then
+        ElseIf VBA.InStr("+-0123456789", VBA.Mid$(JSON_String, JSON_Index, 1)) Then
             JSON_ParseValue = JSON_ParseNumber(JSON_String, JSON_Index, JSON_ConvertLargeNumbersToString)
         Else
             Err.Raise 10001, "JSONConverter", JSON_ParseErrorMessage(JSON_String, JSON_Index, "Expecting 'STRING', 'NUMBER', null, true, false, '{', or '['")
@@ -419,8 +419,53 @@ Private Function JSON_ParseKey(JSON_String As String, ByRef JSON_Index As Long) 
 End Function
 
 Private Function JSON_Encode(ByVal JSON_Text As Variant) As String
-    ' TODO
-    JSON_Encode = JSON_Text
+    ' Reference: http://www.ietf.org/rfc/rfc4627.txt
+    ' Escape: ", \, /, backspace, form feed, line feed, carriage return, tab
+    Dim JSON_Index As Long
+    Dim JSON_Char As String
+    Dim JSON_AscCode As Long
+    Dim JSON_Buffer As String
+    Dim JSON_BufferPosition As Long
+    Dim JSON_BufferLength As Long
+    
+    For JSON_Index = 1 To VBA.Len(JSON_Text)
+        JSON_Char = VBA.Mid$(JSON_Text, JSON_Index, 1)
+        JSON_AscCode = VBA.AscW(JSON_Char)
+        
+        Select Case JSON_AscCode
+        ' " -> 34 -> \"
+        Case 34
+            JSON_Char = "\"""
+        ' \ -> 92 -> \\
+        Case 92
+            JSON_Char = "\\"
+        ' / -> 47 -> \/
+        Case 47
+            JSON_Char = "\/"
+        ' backspace -> 8 -> \b
+        Case 8
+            JSON_Char = "\b"
+        ' form feed -> 12 -> \f
+        Case 12
+            JSON_Char = "\f"
+        ' line feed -> 10 -> \n
+        Case 10
+            JSON_Char = "\n"
+        ' carriage return -> 13 -> \r
+        Case 13
+            JSON_Char = "\r"
+        ' tab -> 9 -> \t
+        Case 9
+            JSON_Char = "\t"
+        ' Non-ascii characters -> convert to 4-digit hex
+        Case 0 To 31, 127 To 65535
+            JSON_Char = "\u" & VBA.Right$("0000" & VBA.Hex$(JSON_AscCode), 4)
+        End Select
+            
+        JSON_BufferAppend JSON_Buffer, JSON_Char, JSON_BufferPosition, JSON_BufferLength
+    Next JSON_Index
+    
+    JSON_Encode = JSON_BufferToString(JSON_Buffer, JSON_BufferPosition, JSON_BufferLength)
 End Function
 
 Private Function JSON_Peek(JSON_String As String, ByVal JSON_Index As Long, Optional JSON_NumberOfCharacters As Long = 1) As String
@@ -493,7 +538,7 @@ Private Function JSON_ParseErrorMessage(JSON_String As String, ByRef JSON_Index 
 End Function
 
 Private Sub JSON_BufferAppend(ByRef JSON_Buffer As String, _
-                              ByRef JSON_Append As String, _
+                              ByRef JSON_Append As Variant, _
                               ByRef JSON_BufferPosition As Long, _
                               ByRef JSON_BufferLength As Long)
 #If Mac Then

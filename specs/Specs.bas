@@ -225,6 +225,14 @@ Public Function Specs() As SpecSuite
         .Expect(JSONString).ToEqual "[""A"",""B"",""C"",""D""]"
     End With
     
+    With Specs.It("should json-encode strings")
+        Dim Strings As Variant
+        Strings = Array("""\/" & vbCrLf & vbTab & vbBack & vbFormFeed, ChrW(128) & ChrW(32767), "#$%&{|}~")
+        
+        JSONString = JSONConverter.ConvertToJSON(Strings)
+        .Expect(JSONString).ToEqual "[""\""\\\/\r\n\t\b\f"",""\u0080\u7FFF"",""#$%&{|}~""]"
+    End With
+    
     ' ============================================= '
     ' Errors
     ' ============================================= '
