@@ -205,6 +205,26 @@ Public Function Specs() As SpecSuite
         .Expect(JSONString).ToEqual "[[1,2],[3,4]]"
     End With
     
+    With Specs.It("should handle strongly typed arrays")
+        Dim LongArray(3) As Long
+        LongArray(0) = 1
+        LongArray(1) = 2
+        LongArray(2) = 3
+        LongArray(3) = 4
+        
+        JSONString = JSONConverter.ConvertToJSON(LongArray)
+        .Expect(JSONString).ToEqual "[1,2,3,4]"
+        
+        Dim StringArray(3) As String
+        StringArray(0) = "A"
+        StringArray(1) = "B"
+        StringArray(2) = "C"
+        StringArray(3) = "D"
+        
+        JSONString = JSONConverter.ConvertToJSON(StringArray)
+        .Expect(JSONString).ToEqual "[""A"",""B"",""C"",""D""]"
+    End With
+    
     ' ============================================= '
     ' Errors
     ' ============================================= '
