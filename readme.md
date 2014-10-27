@@ -11,12 +11,13 @@ Tested in Windows Excel 2013 and Excel for Mac 2011, but should apply to 2007+.
 
 ```VB
 Dim JSON As Object
-Set JSON = JSONConverter.JSONParse("{""a"":123,""b"":[1,2,3,4],""c"":{""d"":456}}")
+Set JSON = JSONConverter.ParseJSON("{""a"":123,""b"":[1,2,3,4],""c"":{""d"":456}}")
 
 ' JSON("a") -> 123
-' JSON("b")(2) -> 3
+' JSON("b")(2) -> 2
 ' JSON("c")("d") -> 456
+JSON("c")("e") = 789
 
-Debug.Print JSONConverter.JSONToString(JSON) 
-' -> "{""a"":123,""b"":[[1,2],[3,4]],""c"":{""d"":456}}"
+Debug.Print JSONConverter.ConvertToJSON(JSON) 
+' -> "{""a"":123,""b"":[1,2,3,4],""c"":{""d"":456,""e"":789}}"
 ```
