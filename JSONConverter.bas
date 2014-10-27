@@ -130,8 +130,7 @@ Public Function ConvertToJSON(ByVal JSON_DictionaryCollectionOrArray As Variant,
         Else
             ConvertToJSON = "false"
         End If
-    
-    Case vbVariant, vbArray, vbArray + vbVariant
+    Case vbArray To vbArray + vbByte
         ' Array
         JSON_BufferAppend JSON_Buffer, "[", JSON_BufferPosition, JSON_BufferLength
         
