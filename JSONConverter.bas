@@ -97,9 +97,19 @@ Public Function ConvertToJSON(ByVal JSON_DictionaryCollectionOrArray As Variant,
     Dim JSON_LBound As Long
     Dim JSON_UBound As Long
     Dim JSON_IsFirstItem As Boolean
+    Dim JSON_Index2D As Long
+    Dim JSON_LBound2D As Long
+    Dim JSON_UBound2D As Long
+    Dim JSON_IsFirstItem2D As Boolean
     Dim JSON_Key As Variant
     Dim JSON_Value As Variant
+    
+    JSON_LBound = -1
+    JSON_UBound = -1
     JSON_IsFirstItem = True
+    JSON_LBound2D = -1
+    JSON_UBound2D = -1
+    JSON_IsFirstItem2D = True
 
     Select Case VarType(JSON_DictionaryCollectionOrArray)
     Case vbNull, vbEmpty
@@ -127,8 +137,10 @@ Public Function ConvertToJSON(ByVal JSON_DictionaryCollectionOrArray As Variant,
         
         On Error Resume Next
         
-        JSON_LBound = LBound(JSON_DictionaryCollectionOrArray)
-        JSON_UBound = UBound(JSON_DictionaryCollectionOrArray)
+        JSON_LBound = LBound(JSON_DictionaryCollectionOrArray, 1)
+        JSON_UBound = UBound(JSON_DictionaryCollectionOrArray, 1)
+        JSON_LBound2D = LBound(JSON_DictionaryCollectionOrArray, 2)
+        JSON_UBound2D = UBound(JSON_DictionaryCollectionOrArray, 2)
         
         If JSON_LBound >= 0 And JSON_UBound >= 0 Then
             For JSON_Index = JSON_LBound To JSON_UBound
@@ -137,10 +149,31 @@ Public Function ConvertToJSON(ByVal JSON_DictionaryCollectionOrArray As Variant,
                 Else
                     JSON_BufferAppend JSON_Buffer, ",", JSON_BufferPosition, JSON_BufferLength
                 End If
+            
+                If JSON_LBound2D >= 0 And JSON_UBound2D >= 0 Then
+                    JSON_BufferAppend JSON_Buffer, "[", JSON_BufferPosition, JSON_BufferLength
                 
-                JSON_BufferAppend JSON_Buffer, _
-                    ConvertToJSON(JSON_DictionaryCollectionOrArray(JSON_Index), JSON_ConvertLargeNumbersFromString), _
-                    JSON_BufferPosition, JSON_BufferLength
+                    For JSON_Index2D = JSON_LBound2D To JSON_UBound2D
+                        If JSON_IsFirstItem2D Then
+                            JSON_IsFirstItem2D = False
+                        Else
+                            JSON_BufferAppend JSON_Buffer, ",", JSON_BufferPosition, JSON_BufferLength
+                        End If
+                        
+                        JSON_BufferAppend JSON_Buffer, _
+                            ConvertToJSON(JSON_DictionaryCollectionOrArray(JSON_Index, JSON_Index2D), _
+                                JSON_ConvertLargeNumbersFromString), _
+                            JSON_BufferPosition, JSON_BufferLength
+                    Next JSON_Index2D
+                    
+                    JSON_BufferAppend JSON_Buffer, "]", JSON_BufferPosition, JSON_BufferLength
+                    JSON_IsFirstItem2D = True
+                Else
+                    JSON_BufferAppend JSON_Buffer, _
+                        ConvertToJSON(JSON_DictionaryCollectionOrArray(JSON_Index), _
+                            JSON_ConvertLargeNumbersFromString), _
+                        JSON_BufferPosition, JSON_BufferLength
+                End If
             Next JSON_Index
         End If
         
