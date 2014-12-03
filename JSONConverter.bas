@@ -486,6 +486,7 @@ Private Function JSON_StringIsLargeNumber(JSON_String As Variant) As Boolean
     ' (See JSON_ParseNumber)
     
     Dim JSON_Length As Long
+    Dim JSON_CharIndex As Long
     JSON_Length = VBA.Len(JSON_String)
     
     ' Length with be at least 16 characters and assume will be less than 100 characters
@@ -495,8 +496,8 @@ Private Function JSON_StringIsLargeNumber(JSON_String As Variant) As Boolean
         
         JSON_StringIsLargeNumber = True
         
-        For i = 1 To JSON_Length
-            JSON_CharCode = VBA.Asc(VBA.Mid$(JSON_String, i, 1))
+        For JSON_CharIndex = 1 To JSON_Length
+            JSON_CharCode = VBA.Asc(VBA.Mid$(JSON_String, JSON_CharIndex, 1))
             Select Case JSON_CharCode
             ' Look for .|0-9|E|e
             Case 46, 48 To 57, 69, 101
@@ -505,7 +506,7 @@ Private Function JSON_StringIsLargeNumber(JSON_String As Variant) As Boolean
                 JSON_StringIsLargeNumber = False
                 Exit Function
             End Select
-        Next i
+        Next JSON_CharIndex
     End If
 End Function
 
