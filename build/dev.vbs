@@ -1,8 +1,8 @@
 ''
 ' Dev
-' (c) Tim Hall - https://github.com/timhall/VBA-JSONConverter
+' (c) Tim Hall - https://github.com/timhall/VBA-JSON
 '
-' Development steps for VBA-JSONConverter
+' Development steps for VBA-JSON
 ' Run: cscript build/dev.vbs
 '
 ' @author: tim.hall.engr@gmail.com
@@ -29,11 +29,11 @@ SrcFolder = ".\"
 SpecsFolder = ".\specs\"
 
 Dim SpecsWorkbookPath
-SpecsWorkbookPath = ".\specs\VBA-JSONConverter - Specs.xlsm"
+SpecsWorkbookPath = ".\specs\VBA-JSON - Specs.xlsm"
 
 Dim Src
 Src = Array( _
-  "JSONConverter.bas" _
+  "JsonConverter.bas" _
 )
 
 Dim Specs
@@ -46,7 +46,7 @@ Main
 Sub Main()
   ' On Error Resume Next
 
-  PrintLn "VBA-JSONConverter v0.0.0 Development"
+  PrintLn "VBA-JSON v1.0.0-rc.1 Development"
 
   ExcelWasOpen = OpenExcel(Excel)
 
@@ -130,7 +130,7 @@ Sub Execute(Name, ModulesDescription, WorkbookDescription)
     If Not Workbook Is Nothing Then
       If Not VBAIsTrusted(Workbook) Then
         PrintLn vbNewLine & _
-          "ERROR: In order to install Excel-REST," & vbNewLine & _
+          "ERROR: In order to install VBA-JSON," & vbNewLine & _
           "access to the VBA project object model needs to be trusted in Excel." & vbNewLine & vbNewLine & _
           "To enable:" & vbNewLine & _
           "Options > Trust Center > Trust Center Settings > Macro Settings > " & vbnewLine & _
