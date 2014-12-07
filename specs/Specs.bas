@@ -1,142 +1,142 @@
 Attribute VB_Name = "Specs"
 Public Function Specs() As SpecSuite
     Set Specs = New SpecSuite
-    Specs.Description = "VBA-JSONConverter"
+    Specs.Description = "VBA-JSON"
     
     On Error Resume Next
     
-    Dim JSONString As String
-    Dim JSONObject As Object
+    Dim JsonString As String
+    Dim JsonObject As Object
     
     ' ============================================= '
     ' Parse JSON
     ' ============================================= '
     
     With Specs.It("should parse object string")
-        JSONString = "{""a"":1,""b"":3.14,""c"":""abc"",""d"":false,""e"":[1,3.14,""abc"",false,[1,2,3],{""a"":1}],""f"":{""a"":1},""g"":null}"
-        Set JSONObject = JSONConverter.ParseJSON(JSONString)
+        JsonString = "{""a"":1,""b"":3.14,""c"":""abc"",""d"":false,""e"":[1,3.14,""abc"",false,[1,2,3],{""a"":1}],""f"":{""a"":1},""g"":null}"
+        Set JsonObject = JsonConverter.ParseJSON(JsonString)
         
-        .Expect(JSONObject).ToNotBeUndefined
-        .Expect(JSONObject("a")).ToEqual 1
-        .Expect(JSONObject("b")).ToEqual 3.14
-        .Expect(JSONObject("c")).ToEqual "abc"
-        .Expect(JSONObject("d")).ToEqual False
+        .Expect(JsonObject).ToNotBeUndefined
+        .Expect(JsonObject("a")).ToEqual 1
+        .Expect(JsonObject("b")).ToEqual 3.14
+        .Expect(JsonObject("c")).ToEqual "abc"
+        .Expect(JsonObject("d")).ToEqual False
         
-        .Expect(JSONObject("e")).ToNotBeUndefined
-        .Expect(JSONObject("e")(1)).ToEqual 1
-        .Expect(JSONObject("e")(2)).ToEqual 3.14
-        .Expect(JSONObject("e")(3)).ToEqual "abc"
-        .Expect(JSONObject("e")(4)).ToEqual False
-        .Expect(JSONObject("e")(5)).ToNotBeUndefined
-        .Expect(JSONObject("e")(5)(1)).ToEqual 1
-        .Expect(JSONObject("e")(5)(2)).ToEqual 2
-        .Expect(JSONObject("e")(5)(3)).ToEqual 3
-        .Expect(JSONObject("e")(6)).ToNotBeUndefined
-        .Expect(JSONObject("e")(6)("a")).ToEqual 1
+        .Expect(JsonObject("e")).ToNotBeUndefined
+        .Expect(JsonObject("e")(1)).ToEqual 1
+        .Expect(JsonObject("e")(2)).ToEqual 3.14
+        .Expect(JsonObject("e")(3)).ToEqual "abc"
+        .Expect(JsonObject("e")(4)).ToEqual False
+        .Expect(JsonObject("e")(5)).ToNotBeUndefined
+        .Expect(JsonObject("e")(5)(1)).ToEqual 1
+        .Expect(JsonObject("e")(5)(2)).ToEqual 2
+        .Expect(JsonObject("e")(5)(3)).ToEqual 3
+        .Expect(JsonObject("e")(6)).ToNotBeUndefined
+        .Expect(JsonObject("e")(6)("a")).ToEqual 1
         
-        .Expect(JSONObject("f")).ToNotBeUndefined
-        .Expect(JSONObject("f")("a")).ToEqual 1
+        .Expect(JsonObject("f")).ToNotBeUndefined
+        .Expect(JsonObject("f")("a")).ToEqual 1
         
-        .Expect(JSONObject("g")).ToBeNull
+        .Expect(JsonObject("g")).ToBeNull
     End With
     
     With Specs.It("should parse array string")
-        JSONString = "[1,3.14,""abc"",false,[1,2,3],{""a"":1},null]"
-        Set JSONObject = JSONConverter.ParseJSON(JSONString)
+        JsonString = "[1,3.14,""abc"",false,[1,2,3],{""a"":1},null]"
+        Set JsonObject = JsonConverter.ParseJSON(JsonString)
         
-        .Expect(JSONObject).ToNotBeUndefined
-        .Expect(JSONObject(1)).ToEqual 1
-        .Expect(JSONObject(2)).ToEqual 3.14
-        .Expect(JSONObject(3)).ToEqual "abc"
-        .Expect(JSONObject(4)).ToEqual False
-        .Expect(JSONObject(5)).ToNotBeUndefined
-        .Expect(JSONObject(5)(1)).ToEqual 1
-        .Expect(JSONObject(5)(2)).ToEqual 2
-        .Expect(JSONObject(5)(3)).ToEqual 3
-        .Expect(JSONObject(6)).ToNotBeUndefined
-        .Expect(JSONObject(6)("a")).ToEqual 1
-        .Expect(JSONObject(7)).ToBeNull
+        .Expect(JsonObject).ToNotBeUndefined
+        .Expect(JsonObject(1)).ToEqual 1
+        .Expect(JsonObject(2)).ToEqual 3.14
+        .Expect(JsonObject(3)).ToEqual "abc"
+        .Expect(JsonObject(4)).ToEqual False
+        .Expect(JsonObject(5)).ToNotBeUndefined
+        .Expect(JsonObject(5)(1)).ToEqual 1
+        .Expect(JsonObject(5)(2)).ToEqual 2
+        .Expect(JsonObject(5)(3)).ToEqual 3
+        .Expect(JsonObject(6)).ToNotBeUndefined
+        .Expect(JsonObject(6)("a")).ToEqual 1
+        .Expect(JsonObject(7)).ToBeNull
     End With
     
     With Specs.It("should parse nested array string")
-        JSONString = "[[[1,2,3],4],5]"
-        Set JSONObject = JSONConverter.ParseJSON(JSONString)
+        JsonString = "[[[1,2,3],4],5]"
+        Set JsonObject = JsonConverter.ParseJSON(JsonString)
         
-        .Expect(JSONObject).ToNotBeUndefined
-        .Expect(JSONObject(1)).ToNotBeUndefined
-        .Expect(JSONObject(1)(1)).ToNotBeUndefined
-        .Expect(JSONObject(1)(1)(1)).ToEqual 1
-        .Expect(JSONObject(1)(1)(2)).ToEqual 2
-        .Expect(JSONObject(1)(1)(3)).ToEqual 3
-        .Expect(JSONObject(1)(2)).ToEqual 4
-        .Expect(JSONObject(2)).ToEqual 5
+        .Expect(JsonObject).ToNotBeUndefined
+        .Expect(JsonObject(1)).ToNotBeUndefined
+        .Expect(JsonObject(1)(1)).ToNotBeUndefined
+        .Expect(JsonObject(1)(1)(1)).ToEqual 1
+        .Expect(JsonObject(1)(1)(2)).ToEqual 2
+        .Expect(JsonObject(1)(1)(3)).ToEqual 3
+        .Expect(JsonObject(1)(2)).ToEqual 4
+        .Expect(JsonObject(2)).ToEqual 5
     End With
     
     With Specs.It("should parse escaped single quote in key and value")
         ' Checks https://code.google.com/p/vba-json/issues/detail?id=2
-        JSONString = "{'a\'b':'c\'d'}"
-        Set JSONObject = JSONConverter.ParseJSON(JSONString)
+        JsonString = "{'a\'b':'c\'d'}"
+        Set JsonObject = JsonConverter.ParseJSON(JsonString)
         
-        .Expect(JSONObject).ToNotBeUndefined
-        .Expect(JSONObject.Exists("a'b")).ToEqual True
-        .Expect(JSONObject("a'b")).ToEqual "c'd"
+        .Expect(JsonObject).ToNotBeUndefined
+        .Expect(JsonObject.Exists("a'b")).ToEqual True
+        .Expect(JsonObject("a'b")).ToEqual "c'd"
     End With
     
     With Specs.It("should parse nested objects and arrays")
         ' Checks https://code.google.com/p/vba-json/issues/detail?id=7
-        JSONString = "{""total_rows"":36778,""offset"":26220,""rows"":[" & vbNewLine & _
+        JsonString = "{""total_rows"":36778,""offset"":26220,""rows"":[" & vbNewLine & _
             "{""id"":""6b80c0b76"",""key"":""a@bbb.net"",""value"":{""entryid"":""81151F241C2500"",""subject"":""test subject"",""senton"":""2009-7-09 22:03:43""}}," & vbNewLine & _
             "{""id"":""b10ed9bee"",""key"":""b@bbb.net"",""value"":{""entryid"":""A7C3CF74EA95C9F"",""subject"":""test subject2"",""senton"":""2009-4-21 10:18:26""}}" & vbNewLine & _
         "]}"
-        Set JSONObject = JSONConverter.ParseJSON(JSONString)
+        Set JsonObject = JsonConverter.ParseJSON(JsonString)
         
-        .Expect(JSONObject).ToNotBeUndefined
-        .Expect(JSONObject("offset")).ToEqual 26220
-        .Expect(JSONObject("rows")(2)("key")).ToEqual "b@bbb.net"
+        .Expect(JsonObject).ToNotBeUndefined
+        .Expect(JsonObject("offset")).ToEqual 26220
+        .Expect(JsonObject("rows")(2)("key")).ToEqual "b@bbb.net"
     End With
     
     With Specs.It("should handle very long numbers as strings (e.g. BIGINT)")
-        JSONString = "[123456789012345678901234567890, 1.123456789012345678901234567890]"
-        Set JSONObject = JSONConverter.ParseJSON(JSONString)
+        JsonString = "[123456789012345678901234567890, 1.123456789012345678901234567890]"
+        Set JsonObject = JsonConverter.ParseJSON(JsonString)
         
-        .Expect(JSONObject).ToNotBeUndefined
-        .Expect(JSONObject(1)).ToEqual "123456789012345678901234567890"
-        .Expect(JSONObject(2)).ToEqual "1.123456789012345678901234567890"
+        .Expect(JsonObject).ToNotBeUndefined
+        .Expect(JsonObject(1)).ToEqual "123456789012345678901234567890"
+        .Expect(JsonObject(2)).ToEqual "1.123456789012345678901234567890"
         
-        JSONString = "[123456789012345678901234567890]"
-        Set JSONObject = JSONConverter.ParseJSON(JSONString, False)
+        JsonString = "[123456789012345678901234567890]"
+        Set JsonObject = JsonConverter.ParseJSON(JsonString, False)
         
-        .Expect(JSONObject).ToNotBeUndefined
-        .Expect(JSONObject(1)).ToEqual 1.23456789012346E+29
+        .Expect(JsonObject).ToNotBeUndefined
+        .Expect(JsonObject(1)).ToEqual 1.23456789012346E+29
     End With
     
     With Specs.It("should parse double-backslash as backslash")
         ' Checks https://code.google.com/p/vba-json/issues/detail?id=11
-        JSONString = "[""C:\\folder\\picture.jpg""]"
-        Set JSONObject = JSONConverter.ParseJSON(JSONString)
+        JsonString = "[""C:\\folder\\picture.jpg""]"
+        Set JsonObject = JsonConverter.ParseJSON(JsonString)
         
-        .Expect(JSONObject).ToNotBeUndefined
-        .Expect(JSONObject(1)).ToEqual "C:\folder\picture.jpg"
+        .Expect(JsonObject).ToNotBeUndefined
+        .Expect(JsonObject(1)).ToEqual "C:\folder\picture.jpg"
     End With
     
     With Specs.It("should allow keys and values with colons")
         ' Checks https://code.google.com/p/vba-json/issues/detail?id=14
-        JSONString = "{""a:b"":""c:d""}"
-        Set JSONObject = JSONConverter.ParseJSON(JSONString)
+        JsonString = "{""a:b"":""c:d""}"
+        Set JsonObject = JsonConverter.ParseJSON(JsonString)
         
-        .Expect(JSONObject).ToNotBeUndefined
-        .Expect(JSONObject.Exists("a:b")).ToEqual True
-        .Expect(JSONObject("a:b")).ToEqual "c:d"
+        .Expect(JsonObject).ToNotBeUndefined
+        .Expect(JsonObject.Exists("a:b")).ToEqual True
+        .Expect(JsonObject("a:b")).ToEqual "c:d"
     End With
     
     With Specs.It("should allow spaces in keys")
         ' Checks https://code.google.com/p/vba-json/issues/detail?id=19
-        JSONString = "{""a b  c"":""d e  f""}"
-        Set JSONObject = JSONConverter.ParseJSON(JSONString)
+        JsonString = "{""a b  c"":""d e  f""}"
+        Set JsonObject = JsonConverter.ParseJSON(JsonString)
         
-        .Expect(JSONObject).ToNotBeUndefined
-        .Expect(JSONObject.Exists("a b  c")).ToEqual True
-        .Expect(JSONObject("a b  c")).ToEqual "d e  f"
+        .Expect(JsonObject).ToNotBeUndefined
+        .Expect(JsonObject.Exists("a b  c")).ToEqual True
+        .Expect(JsonObject("a b  c")).ToEqual "d e  f"
     End With
     
     ' ============================================= '
@@ -144,53 +144,61 @@ Public Function Specs() As SpecSuite
     ' ============================================= '
     
     With Specs.It("should convert object to string")
-        Set JSONObject = New Dictionary
-        JSONObject.Add "a", 1
-        JSONObject.Add "b", 3.14
-        JSONObject.Add "c", "abc"
-        JSONObject.Add "d", False
-        JSONObject.Add "e", New Collection
-        JSONObject("e").Add 1
-        JSONObject("e").Add 3.14
-        JSONObject("e").Add "abc"
-        JSONObject("e").Add False
-        JSONObject("e").Add Array(1, 2, 3)
-        JSONObject("e").Add New Dictionary
-        JSONObject("e")(6).Add "a", 1
-        JSONObject.Add "f", New Dictionary
-        JSONObject("f").Add "a", 1
-        JSONObject.Add "g", Null
+        Set JsonObject = New Dictionary
+        JsonObject.Add "a", 1
+        JsonObject.Add "b", 3.14
+        JsonObject.Add "c", "abc"
+        JsonObject.Add "d", False
+        JsonObject.Add "e", New Collection
+        JsonObject("e").Add 1
+        JsonObject("e").Add 3.14
+        JsonObject("e").Add "abc"
+        JsonObject("e").Add False
+        JsonObject("e").Add Array(1, 2, 3)
+        JsonObject("e").Add New Dictionary
+        JsonObject("e")(6).Add "a", 1
+        JsonObject.Add "f", New Dictionary
+        JsonObject("f").Add "a", 1
+        JsonObject.Add "g", Null
         
-        JSONString = JSONConverter.ConvertToJSON(JSONObject)
-        .Expect(JSONString).ToEqual "{""a"":1,""b"":3.14,""c"":""abc"",""d"":false,""e"":[1,3.14,""abc"",false,[1,2,3],{""a"":1}],""f"":{""a"":1},""g"":null}"
+        JsonString = JsonConverter.ConvertToJSON(JsonObject)
+        .Expect(JsonString).ToEqual "{""a"":1,""b"":3.14,""c"":""abc"",""d"":false,""e"":[1,3.14,""abc"",false,[1,2,3],{""a"":1}],""f"":{""a"":1},""g"":null}"
     End With
     
     With Specs.It("should convert collection to string")
-        Set JSONObject = New Collection
-        JSONObject.Add 1
-        JSONObject.Add 3.14
-        JSONObject.Add "abc"
-        JSONObject.Add False
-        JSONObject.Add Array(1, 2, 3)
-        JSONObject.Add New Dictionary
-        JSONObject(6).Add "a", 1
-        JSONObject.Add Null
+        Set JsonObject = New Collection
+        JsonObject.Add 1
+        JsonObject.Add 3.14
+        JsonObject.Add "abc"
+        JsonObject.Add False
+        JsonObject.Add Array(1, 2, 3)
+        JsonObject.Add New Dictionary
+        JsonObject(6).Add "a", 1
+        JsonObject.Add Null
     
-        JSONString = JSONConverter.ConvertToJSON(JSONObject)
-        .Expect(JSONString).ToEqual "[1,3.14,""abc"",false,[1,2,3],{""a"":1},null]"
+        JsonString = JsonConverter.ConvertToJSON(JsonObject)
+        .Expect(JsonString).ToEqual "[1,3.14,""abc"",false,[1,2,3],{""a"":1},null]"
     End With
     
     With Specs.It("should convert array to string")
-        JSONString = JSONConverter.ConvertToJSON(Array(1, 3.14, "abc", False, Array(1, 2, 3)))
-        .Expect(JSONString).ToEqual "[1,3.14,""abc"",false,[1,2,3]]"
+        JsonString = JsonConverter.ConvertToJSON(Array(1, 3.14, "abc", False, Array(1, 2, 3)))
+        .Expect(JsonString).ToEqual "[1,3.14,""abc"",false,[1,2,3]]"
     End With
     
     With Specs.It("should convert very long numbers as strings (e.g. BIGINT)")
-        JSONString = JSONConverter.ConvertToJSON(Array("123456789012345678901234567890", "1.123456789012345678901234567890", "1234567890123456F"))
-        .Expect(JSONString).ToEqual "[123456789012345678901234567890,1.123456789012345678901234567890,""1234567890123456F""]"
+        JsonString = JsonConverter.ConvertToJSON(Array("123456789012345678901234567890", "1.123456789012345678901234567890", "1234567890123456F"))
+        .Expect(JsonString).ToEqual "[123456789012345678901234567890,1.123456789012345678901234567890,""1234567890123456F""]"
         
-        JSONString = JSONConverter.ConvertToJSON(Array("123456789012345678901234567890"), False)
-        .Expect(JSONString).ToEqual "[""123456789012345678901234567890""]"
+        JsonString = JsonConverter.ConvertToJSON(Array("123456789012345678901234567890"), False)
+        .Expect(JsonString).ToEqual "[""123456789012345678901234567890""]"
+    End With
+    
+    With Specs.It("should convert dates to ISO 8601")
+        JsonString = JsonConverter.ConvertToJSON(Array(DateValue("Jan. 2, 2003") + TimeValue("4:05:06 PM")))
+        
+        ' Don't test hour/minute due to UTC offset
+        .Expect(JsonString).ToMatch "[""2003-01-02T"
+        .Expect(JsonString).ToMatch ":06.000Z""]"
     End With
     
     With Specs.It("should convert 2D arrays")
@@ -201,8 +209,8 @@ Public Function Specs() As SpecSuite
         MultiDimensionalArray(1, 0) = 3
         MultiDimensionalArray(1, 1) = 4
         
-        JSONString = JSONConverter.ConvertToJSON(MultiDimensionalArray)
-        .Expect(JSONString).ToEqual "[[1,2],[3,4]]"
+        JsonString = JsonConverter.ConvertToJSON(MultiDimensionalArray)
+        .Expect(JsonString).ToEqual "[[1,2],[3,4]]"
     End With
     
     With Specs.It("should handle strongly typed arrays")
@@ -212,8 +220,8 @@ Public Function Specs() As SpecSuite
         LongArray(2) = 3
         LongArray(3) = 4
         
-        JSONString = JSONConverter.ConvertToJSON(LongArray)
-        .Expect(JSONString).ToEqual "[1,2,3,4]"
+        JsonString = JsonConverter.ConvertToJSON(LongArray)
+        .Expect(JsonString).ToEqual "[1,2,3,4]"
         
         Dim StringArray(3) As String
         StringArray(0) = "A"
@@ -221,16 +229,16 @@ Public Function Specs() As SpecSuite
         StringArray(2) = "C"
         StringArray(3) = "D"
         
-        JSONString = JSONConverter.ConvertToJSON(StringArray)
-        .Expect(JSONString).ToEqual "[""A"",""B"",""C"",""D""]"
+        JsonString = JsonConverter.ConvertToJSON(StringArray)
+        .Expect(JsonString).ToEqual "[""A"",""B"",""C"",""D""]"
     End With
     
     With Specs.It("should json-encode strings")
         Dim Strings As Variant
         Strings = Array("""\/" & vbCrLf & vbTab & vbBack & vbFormFeed, ChrW(128) & ChrW(32767), "#$%&{|}~")
         
-        JSONString = JSONConverter.ConvertToJSON(Strings)
-        .Expect(JSONString).ToEqual "[""\""\\\/\r\n\t\b\f"",""\u0080\u7FFF"",""#$%&{|}~""]"
+        JsonString = JsonConverter.ConvertToJSON(Strings)
+        .Expect(JsonString).ToEqual "[""\""\\\/\r\n\t\b\f"",""\u0080\u7FFF"",""#$%&{|}~""]"
     End With
     
     ' ============================================= '
@@ -239,28 +247,32 @@ Public Function Specs() As SpecSuite
     
     With Specs.It("should have descriptive parsing errors")
         Err.Clear
-        JSONString = "Howdy!"
-        Set JSONObject = JSONConverter.ParseJSON(JSONString)
+        JsonString = "Howdy!"
+        Set JsonObject = JsonConverter.ParseJSON(JsonString)
         
-        .Expect.RunMatcher "ToMatchParseError", "to match parse error", "Howdy!", "^", "Expecting '{' or '['"
-        
-        Err.Clear
-        JSONString = "{""abc""}"
-        Set JSONObject = JSONConverter.ParseJSON(JSONString)
-        
-        .Expect.RunMatcher "ToMatchParseError", "to match parse error", "{""abc""}", "      ^", "Expecting ':'"
+        .Expect.RunMatcher "ToMatchParseError", "to match parse error", _
+            "Howdy!", "^", "Expecting '{' or '['"
         
         Err.Clear
-        JSONString = "{""abc"":True}"
-        Set JSONObject = JSONConverter.ParseJSON(JSONString)
+        JsonString = "{""abc""}"
+        Set JsonObject = JsonConverter.ParseJSON(JsonString)
         
-        .Expect.RunMatcher "ToMatchParseError", "to match parse error", "{""abc"":True}", "       ^", "Expecting 'STRING', 'NUMBER', null, true, false, '{', or '['"
+        .Expect.RunMatcher "ToMatchParseError", "to match parse error", _
+            "{""abc""}", "      ^", "Expecting ':'"
         
         Err.Clear
-        JSONString = "{""abc"":undefined}"
-        Set JSONObject = JSONConverter.ParseJSON(JSONString)
+        JsonString = "{""abc"":True}"
+        Set JsonObject = JsonConverter.ParseJSON(JsonString)
         
-        .Expect.RunMatcher "ToMatchParseError", "to match parse error", "{""abc"":undefined}", "       ^", "Expecting 'STRING', 'NUMBER', null, true, false, '{', or '['"
+        .Expect.RunMatcher "ToMatchParseError", "to match parse error", _
+            "{""abc"":True}", "       ^", "Expecting 'STRING', 'NUMBER', null, true, false, '{', or '['"
+        
+        Err.Clear
+        JsonString = "{""abc"":undefined}"
+        Set JsonObject = JsonConverter.ParseJSON(JsonString)
+        
+        .Expect.RunMatcher "ToMatchParseError", "to match parse error", _
+            "{""abc"":undefined}", "       ^", "Expecting 'STRING', 'NUMBER', null, true, false, '{', or '['"
     End With
     
     InlineRunner.RunSuite Specs
