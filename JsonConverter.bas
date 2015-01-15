@@ -680,7 +680,7 @@ Private Function json_UnsignedAdd(json_Start As Long, json_Increment As Long) As
 End Function
 
 ''
-' VBA-UTC v1.0.0-rc.2
+' VBA-UTC v1.0.0-rc.3
 ' (c) Tim Hall - https://github.com/VBA-tools/VBA-UtcConverter
 '
 ' UTC/ISO 8601 Converter for VBA
@@ -692,7 +692,7 @@ End Function
 ' 10014 - ISO 8601 conversion error
 '
 ' @author: tim.hall.engr@gmail.com
-' @license: MIT (http://www.opensource.org/licenses/mit-license.php
+' @license: MIT (http://www.opensource.org/licenses/mit-license.php)
 ' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ '
 
 ' (Declarations moved to top)
@@ -708,7 +708,7 @@ End Function
 ' @return {Date} Local date
 ' -------------------------------------- '
 Public Function ParseUtc(utc_UtcDate As Date) As Date
-    On Error GoTo ErrorHandling
+    On Error GoTo utc_ErrorHandling
     
 #If Mac Then
     ParseUtc = utc_ConvertDate(utc_UtcDate)
@@ -724,7 +724,7 @@ Public Function ParseUtc(utc_UtcDate As Date) As Date
 
     Exit Function
 
-ErrorHandling:
+utc_ErrorHandling:
     Err.Raise 10011, "UtcConverter.ParseUtc", "UTC parsing error: " & Err.Number & " - " & Err.Description
 End Function
 
@@ -735,7 +735,7 @@ End Function
 ' @return {Date} UTC date
 ' -------------------------------------- '
 Public Function ConvertToUtc(utc_LocalDate As Date) As Date
-    On Error GoTo ErrorHandling
+    On Error GoTo utc_ErrorHandling
     
 #If Mac Then
     ConvertToUtc = utc_ConvertDate(utc_LocalDate, utc_ConvertToUtc:=True)
@@ -751,7 +751,7 @@ Public Function ConvertToUtc(utc_LocalDate As Date) As Date
     
     Exit Function
     
-ErrorHandling:
+utc_ErrorHandling:
     Err.Raise 10012, "UtcConverter.ConvertToUtc", "UTC conversion error: " & Err.Number & " - " & Err.Description
 End Function
 
@@ -762,7 +762,7 @@ End Function
 ' @return {Date} Local date
 ' -------------------------------------- '
 Public Function ParseIso(utc_IsoString As String) As Date
-    On Error GoTo ErrorHandling
+    On Error GoTo utc_ErrorHandling
     
     Dim utc_Parts() As String
     Dim utc_DateParts() As String
@@ -825,7 +825,7 @@ Public Function ParseIso(utc_IsoString As String) As Date
     
     Exit Function
     
-ErrorHandling:
+utc_ErrorHandling:
     Err.Raise 10013, "UtcConverter.ParseIso", "ISO 8601 parsing error for " & utc_IsoString & ": " & Err.Number & " - " & Err.Description
 End Function
 
@@ -836,13 +836,13 @@ End Function
 ' @return {Date} ISO 8601 string
 ' -------------------------------------- '
 Public Function ConvertToIso(utc_LocalDate As Date) As String
-    On Error GoTo ErrorHandling
+    On Error GoTo utc_ErrorHandling
     
     ConvertToIso = VBA.Format$(ConvertToUtc(utc_LocalDate), "yyyy-mm-ddTHH:mm:ss.000Z")
     
     Exit Function
     
-ErrorHandling:
+utc_ErrorHandling:
     Err.Raise 10014, "UtcConverter.ConvertToIso", "ISO 8601 conversion error: " & Err.Number & " - " & Err.Description
 End Function
 
@@ -886,7 +886,7 @@ Private Function utc_ExecuteInShell(utc_ShellCommand As String) As utc_ShellResu
     Dim utc_Chunk As String
     Dim utc_Read As Long
     
-    On Error GoTo ErrorHandling
+    On Error GoTo utc_ErrorHandling
     utc_File = utc_popen(utc_ShellCommand, "r")
     
     If utc_File = 0 Then: Exit Function
@@ -900,7 +900,7 @@ Private Function utc_ExecuteInShell(utc_ShellCommand As String) As utc_ShellResu
         End If
     Loop
 
-ErrorHandling:
+utc_ErrorHandling:
     utc_ExecuteInShell.utc_ExitCode = utc_pclose(utc_File)
 End Function
 #Else
