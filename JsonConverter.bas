@@ -46,12 +46,13 @@ Attribute VB_Name = "JsonConverter"
 '
 ' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ '
 
+' === VBA-UTC Headers
 #If Mac Then
 
-Private Declare Function utc_popen Lib "libc.dylib" Alias "popen" (ByVal utc_command As String, ByVal utc_mode As String) As Long
-Private Declare Function utc_pclose Lib "libc.dylib" Alias "pclose" (ByVal utc_file As Long) As Long
-Private Declare Function utc_fread Lib "libc.dylib" Alias "fread" (ByVal utc_buffer As String, ByVal utc_size As Long, ByVal utc_number As Long, ByVal utc_file As Long) As Long
-Private Declare Function utc_feof Lib "libc.dylib" Alias "feof" (ByVal utc_file As Long) As Long
+Private Declare Function utc_popen Lib "libc.dylib" Alias "popen" (ByVal utc_Command As String, ByVal utc_Mode As String) As Long
+Private Declare Function utc_pclose Lib "libc.dylib" Alias "pclose" (ByVal utc_File As Long) As Long
+Private Declare Function utc_fread Lib "libc.dylib" Alias "fread" (ByVal utc_Buffer As String, ByVal utc_Size As Long, ByVal utc_Number As Long, ByVal utc_File As Long) As Long
+Private Declare Function utc_feof Lib "libc.dylib" Alias "feof" (ByVal utc_File As Long) As Long
 
 Private Type utc_ShellResult
     utc_Output As String
@@ -92,6 +93,7 @@ Private Type utc_TIME_ZONE_INFORMATION
 End Type
 
 #End If
+' ===
 
 #If Mac Then
 #ElseIf Win64 Then
@@ -678,7 +680,7 @@ Private Function json_UnsignedAdd(json_Start As Long, json_Increment As Long) As
 End Function
 
 ''
-' VBA-UTC v1.0.0-rc.1
+' VBA-UTC v1.0.0-rc.2
 ' (c) Tim Hall - https://github.com/VBA-tools/VBA-UtcConverter
 '
 ' UTC/ISO 8601 Converter for VBA
@@ -694,52 +696,52 @@ End Function
 ' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ '
 
 ' (Moved to top)
-'#If Mac Then
+' #If Mac Then
 '
-'Private Declare Function utc_popen Lib "libc.dylib" Alias "popen" (ByVal utc_command As String, ByVal utc_mode As String) As Long
-'Private Declare Function utc_pclose Lib "libc.dylib" Alias "pclose" (ByVal utc_file As Long) As Long
-'Private Declare Function utc_fread Lib "libc.dylib" Alias "fread" (ByVal utc_buffer As String, ByVal utc_size As Long, ByVal utc_number As Long, ByVal utc_file As Long) As Long
-'Private Declare Function utc_feof Lib "libc.dylib" Alias "feof" (ByVal utc_file As Long) As Long
+' Private Declare Function utc_popen Lib "libc.dylib" Alias "popen" (ByVal utc_Command As String, ByVal utc_Mode As String) As Long
+' Private Declare Function utc_pclose Lib "libc.dylib" Alias "pclose" (ByVal utc_File As Long) As Long
+' Private Declare Function utc_fread Lib "libc.dylib" Alias "fread" (ByVal utc_Buffer As String, ByVal utc_Size As Long, ByVal utc_Number As Long, ByVal utc_File As Long) As Long
+' Private Declare Function utc_feof Lib "libc.dylib" Alias "feof" (ByVal utc_File As Long) As Long
 '
-'Private Type utc_ShellResult
-'    utc_Output As String
-'    utc_ExitCode As Long
-'End Type
+' Private Type utc_ShellResult
+'     utc_Output As String
+'     utc_ExitCode As Long
+' End Type
 '
-'#Else
+' #Else
 '
-'' http://msdn.microsoft.com/en-us/library/windows/desktop/ms724421.aspx
-'' http://msdn.microsoft.com/en-us/library/windows/desktop/ms724949.aspx
-'' http://msdn.microsoft.com/en-us/library/windows/desktop/ms725485.aspx
-'Private Declare Function utc_GetTimeZoneInformation Lib "kernel32" Alias "GetTimeZoneInformation" _
-'    (utc_lpTimeZoneInformation As utc_TIME_ZONE_INFORMATION) As Long
-'Private Declare Function utc_SystemTimeToTzSpecificLocalTime Lib "kernel32" Alias "SystemTimeToTzSpecificLocalTime" _
-'    (utc_lpTimeZoneInformation As utc_TIME_ZONE_INFORMATION, utc_lpUniversalTime As utc_SYSTEMTIME, utc_lpLocalTime As utc_SYSTEMTIME) As Long
-'Private Declare Function utc_TzSpecificLocalTimeToSystemTime Lib "kernel32" Alias "TzSpecificLocalTimeToSystemTime" _
-'    (utc_lpTimeZoneInformation As utc_TIME_ZONE_INFORMATION, utc_lpLocalTime As utc_SYSTEMTIME, utc_lpUniversalTime As utc_SYSTEMTIME) As Long
+' ' http://msdn.microsoft.com/en-us/library/windows/desktop/ms724421.aspx
+' ' http://msdn.microsoft.com/en-us/library/windows/desktop/ms724949.aspx
+' ' http://msdn.microsoft.com/en-us/library/windows/desktop/ms725485.aspx
+' Private Declare Function utc_GetTimeZoneInformation Lib "kernel32" Alias "GetTimeZoneInformation" _
+'     (utc_lpTimeZoneInformation As utc_TIME_ZONE_INFORMATION) As Long
+' Private Declare Function utc_SystemTimeToTzSpecificLocalTime Lib "kernel32" Alias "SystemTimeToTzSpecificLocalTime" _
+'     (utc_lpTimeZoneInformation As utc_TIME_ZONE_INFORMATION, utc_lpUniversalTime As utc_SYSTEMTIME, utc_lpLocalTime As utc_SYSTEMTIME) As Long
+' Private Declare Function utc_TzSpecificLocalTimeToSystemTime Lib "kernel32" Alias "TzSpecificLocalTimeToSystemTime" _
+'     (utc_lpTimeZoneInformation As utc_TIME_ZONE_INFORMATION, utc_lpLocalTime As utc_SYSTEMTIME, utc_lpUniversalTime As utc_SYSTEMTIME) As Long
 '
-'Private Type utc_SYSTEMTIME
-'    utc_wYear As Integer
-'    utc_wMonth As Integer
-'    utc_wDayOfWeek As Integer
-'    utc_wDay As Integer
-'    utc_wHour As Integer
-'    utc_wMinute As Integer
-'    utc_wSecond As Integer
-'    utc_wMilliseconds As Integer
-'End Type
+' Private Type utc_SYSTEMTIME
+'     utc_wYear As Integer
+'     utc_wMonth As Integer
+'     utc_wDayOfWeek As Integer
+'     utc_wDay As Integer
+'     utc_wHour As Integer
+'     utc_wMinute As Integer
+'     utc_wSecond As Integer
+'     utc_wMilliseconds As Integer
+' End Type
 '
-'Private Type utc_TIME_ZONE_INFORMATION
-'    utc_Bias As Long
-'    utc_StandardName(0 To 31) As Integer
-'    utc_StandardDate As utc_SYSTEMTIME
-'    utc_StandardBias As Long
-'    utc_DaylightName(0 To 31) As Integer
-'    utc_DaylightDate As utc_SYSTEMTIME
-'    utc_DaylightBias As Long
-'End Type
+' Private Type utc_TIME_ZONE_INFORMATION
+'     utc_Bias As Long
+'     utc_StandardName(0 To 31) As Integer
+'     utc_StandardDate As utc_SYSTEMTIME
+'     utc_StandardBias As Long
+'     utc_DaylightName(0 To 31) As Integer
+'     utc_DaylightDate As utc_SYSTEMTIME
+'     utc_DaylightBias As Long
+' End Type
 '
-'#End If
+' #End If
 
 ' ============================================= '
 ' Public Methods
@@ -926,18 +928,18 @@ Private Function utc_ConvertDate(utc_Value As Date, Optional utc_ConvertToUtc As
     End If
 End Function
 Private Function utc_ExecuteInShell(utc_ShellCommand As String) As utc_ShellResult
-    Dim utc_file As Long
+    Dim utc_File As Long
     Dim utc_Chunk As String
     Dim utc_Read As Long
     
     On Error GoTo ErrorHandling
-    utc_file = utc_popen(utc_ShellCommand, "r")
+    utc_File = utc_popen(utc_ShellCommand, "r")
     
-    If utc_file = 0 Then: Exit Function
+    If utc_File = 0 Then: Exit Function
     
-    Do While utc_feof(utc_file) = 0
+    Do While utc_feof(utc_File) = 0
         utc_Chunk = VBA.Space$(50)
-        utc_Read = utc_fread(utc_Chunk, 1, Len(utc_Chunk) - 1, utc_file)
+        utc_Read = utc_fread(utc_Chunk, 1, Len(utc_Chunk) - 1, utc_File)
         If utc_Read > 0 Then
             utc_Chunk = VBA.Left$(utc_Chunk, utc_Read)
             utc_ExecuteInShell.utc_Output = utc_ExecuteInShell.utc_Output & utc_Chunk
@@ -945,7 +947,7 @@ Private Function utc_ExecuteInShell(utc_ShellCommand As String) As utc_ShellResu
     Loop
 
 ErrorHandling:
-    utc_ExecuteInShell.utc_ExitCode = utc_pclose(File)
+    utc_ExecuteInShell.utc_ExitCode = utc_pclose(utc_File)
 End Function
 #Else
 Private Function utc_DateToSystemTime(utc_Value As Date) As utc_SYSTEMTIME
@@ -963,4 +965,3 @@ Private Function utc_SystemTimeToDate(utc_Value As utc_SYSTEMTIME) As Date
         TimeSerial(utc_Value.utc_wHour, utc_Value.utc_wMinute, utc_Value.utc_wSecond)
 End Function
 #End If
-
