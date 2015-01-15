@@ -10,7 +10,7 @@ Attribute VB_Name = "JsonConverter"
 ' 10002 - ISO 8601 date conversion error
 '
 ' @author: tim.hall.engr@gmail.com
-' @license: MIT (http://www.opensource.org/licenses/mit-license.php
+' @license: MIT (http://www.opensource.org/licenses/mit-license.php)
 '
 ' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ '
 '
@@ -695,53 +695,7 @@ End Function
 ' @license: MIT (http://www.opensource.org/licenses/mit-license.php
 ' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ '
 
-' (Moved to top)
-' #If Mac Then
-'
-' Private Declare Function utc_popen Lib "libc.dylib" Alias "popen" (ByVal utc_Command As String, ByVal utc_Mode As String) As Long
-' Private Declare Function utc_pclose Lib "libc.dylib" Alias "pclose" (ByVal utc_File As Long) As Long
-' Private Declare Function utc_fread Lib "libc.dylib" Alias "fread" (ByVal utc_Buffer As String, ByVal utc_Size As Long, ByVal utc_Number As Long, ByVal utc_File As Long) As Long
-' Private Declare Function utc_feof Lib "libc.dylib" Alias "feof" (ByVal utc_File As Long) As Long
-'
-' Private Type utc_ShellResult
-'     utc_Output As String
-'     utc_ExitCode As Long
-' End Type
-'
-' #Else
-'
-' ' http://msdn.microsoft.com/en-us/library/windows/desktop/ms724421.aspx
-' ' http://msdn.microsoft.com/en-us/library/windows/desktop/ms724949.aspx
-' ' http://msdn.microsoft.com/en-us/library/windows/desktop/ms725485.aspx
-' Private Declare Function utc_GetTimeZoneInformation Lib "kernel32" Alias "GetTimeZoneInformation" _
-'     (utc_lpTimeZoneInformation As utc_TIME_ZONE_INFORMATION) As Long
-' Private Declare Function utc_SystemTimeToTzSpecificLocalTime Lib "kernel32" Alias "SystemTimeToTzSpecificLocalTime" _
-'     (utc_lpTimeZoneInformation As utc_TIME_ZONE_INFORMATION, utc_lpUniversalTime As utc_SYSTEMTIME, utc_lpLocalTime As utc_SYSTEMTIME) As Long
-' Private Declare Function utc_TzSpecificLocalTimeToSystemTime Lib "kernel32" Alias "TzSpecificLocalTimeToSystemTime" _
-'     (utc_lpTimeZoneInformation As utc_TIME_ZONE_INFORMATION, utc_lpLocalTime As utc_SYSTEMTIME, utc_lpUniversalTime As utc_SYSTEMTIME) As Long
-'
-' Private Type utc_SYSTEMTIME
-'     utc_wYear As Integer
-'     utc_wMonth As Integer
-'     utc_wDayOfWeek As Integer
-'     utc_wDay As Integer
-'     utc_wHour As Integer
-'     utc_wMinute As Integer
-'     utc_wSecond As Integer
-'     utc_wMilliseconds As Integer
-' End Type
-'
-' Private Type utc_TIME_ZONE_INFORMATION
-'     utc_Bias As Long
-'     utc_StandardName(0 To 31) As Integer
-'     utc_StandardDate As utc_SYSTEMTIME
-'     utc_StandardBias As Long
-'     utc_DaylightName(0 To 31) As Integer
-'     utc_DaylightDate As utc_SYSTEMTIME
-'     utc_DaylightBias As Long
-' End Type
-'
-' #End If
+' (Declarations moved to top)
 
 ' ============================================= '
 ' Public Methods
