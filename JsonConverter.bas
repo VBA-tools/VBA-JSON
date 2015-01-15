@@ -1,6 +1,6 @@
 Attribute VB_Name = "JsonConverter"
 ''
-' VBA-JSON v1.0.0-rc.2
+' VBA-JSON v1.0.0-rc.3
 ' (c) Tim Hall - https://github.com/timhall/VBA-JSONConverter
 '
 ' JSON Converter for VBA
