@@ -274,7 +274,7 @@ Public Function ConvertToJson(ByVal json_DictionaryCollectionOrArray As Variant,
     Case Else
         ' Number
         On Error Resume Next
-        ConvertToJson = json_DictionaryCollectionOrArray
+        ConvertToJson = VBA.Replace(json_DictionaryCollectionOrArray, ",", ".")
         On Error GoTo 0
     End Select
 End Function
