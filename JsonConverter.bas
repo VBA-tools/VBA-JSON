@@ -1,7 +1,7 @@
 Attribute VB_Name = "JsonConverter"
 ''
-' VBA-JSON v1.0.0-rc.5
-' (c) Tim Hall - https://github.com/timhall/VBA-JSONConverter
+' VBA-JSON v1.0.0-rc.6
+' (c) Tim Hall - https://github.com/VBA-tools/VBA-JSON
 '
 ' JSON Converter for VBA
 '
@@ -9,9 +9,9 @@ Attribute VB_Name = "JsonConverter"
 ' 10001 - JSON parse error
 ' 10002 - ISO 8601 date conversion error
 '
-' @author: tim.hall.engr@gmail.com
-' @license: MIT (http://www.opensource.org/licenses/mit-license.php)
-'
+' @class JsonConverter
+' @author tim.hall.engr@gmail.com
+' @license MIT (http://www.opensource.org/licenses/mit-license.php)
 ' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ '
 '
 ' Based originally on vba-json (with extensive changes)
@@ -43,7 +43,6 @@ Attribute VB_Name = "JsonConverter"
 ' ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 ' (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ' SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-'
 ' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ '
 
 ' === VBA-UTC Headers
@@ -124,9 +123,10 @@ Private Declare Sub json_CopyMemory Lib "kernel32" Alias "RtlMoveMemory" _
 ''
 ' Convert JSON string to object (Dictionary/Collection)
 '
+' @method ParseJson
 ' @param {String} json_String
 ' @return {Object} (Dictionary or Collection)
-' -------------------------------------- '
+''
 Public Function ParseJson(ByVal json_String As String, Optional json_ConvertLargeNumbersToString As Boolean = True) As Object
     Dim json_Index As Long
     json_Index = 1
@@ -149,9 +149,10 @@ End Function
 ''
 ' Convert object (Dictionary/Collection/Array) to JSON
 '
+' @method ConvertToJson
 ' @param {Variant} json_DictionaryCollectionOrArray (Dictionary, Collection, or Array)
 ' @return {String}
-' -------------------------------------- '
+''
 Public Function ConvertToJson(ByVal json_DictionaryCollectionOrArray As Variant, Optional json_ConvertLargeNumbersFromString As Boolean = True) As String
     Dim json_buffer As String
     Dim json_BufferPosition As Long
