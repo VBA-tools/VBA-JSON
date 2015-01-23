@@ -59,7 +59,7 @@ Private Type utc_ShellResult
     utc_ExitCode As Long
 End Type
 
-#Else
+#ElseIf Win32 Then
 
 ' http://msdn.microsoft.com/en-us/library/windows/desktop/ms724421.aspx
 ' http://msdn.microsoft.com/en-us/library/windows/desktop/ms724949.aspx
@@ -70,6 +70,19 @@ Private Declare Function utc_SystemTimeToTzSpecificLocalTime Lib "kernel32" Alia
     (utc_lpTimeZoneInformation As utc_TIME_ZONE_INFORMATION, utc_lpUniversalTime As utc_SYSTEMTIME, utc_lpLocalTime As utc_SYSTEMTIME) As Long
 Private Declare Function utc_TzSpecificLocalTimeToSystemTime Lib "kernel32" Alias "TzSpecificLocalTimeToSystemTime" _
     (utc_lpTimeZoneInformation As utc_TIME_ZONE_INFORMATION, utc_lpLocalTime As utc_SYSTEMTIME, utc_lpUniversalTime As utc_SYSTEMTIME) As Long
+
+#Else
+
+Private Declare PtrSafe Function utc_GetTimeZoneInformation Lib "kernel32" Alias "GetTimeZoneInformation" _
+    (utc_lpTimeZoneInformation As utc_TIME_ZONE_INFORMATION) As Long
+Private Declare PtrSafe Function utc_SystemTimeToTzSpecificLocalTime Lib "kernel32" Alias "SystemTimeToTzSpecificLocalTime" _
+    (utc_lpTimeZoneInformation As utc_TIME_ZONE_INFORMATION, utc_lpUniversalTime As utc_SYSTEMTIME, utc_lpLocalTime As utc_SYSTEMTIME) As Long
+Private Declare PtrSafe Function utc_TzSpecificLocalTimeToSystemTime Lib "kernel32" Alias "TzSpecificLocalTimeToSystemTime" _
+    (utc_lpTimeZoneInformation As utc_TIME_ZONE_INFORMATION, utc_lpLocalTime As utc_SYSTEMTIME, utc_lpUniversalTime As utc_SYSTEMTIME) As Long
+
+#End If
+
+#If Win32 Or Win64 Then
 
 Private Type utc_SYSTEMTIME
     utc_wYear As Integer
@@ -680,7 +693,7 @@ Private Function json_UnsignedAdd(json_Start As Long, json_Increment As Long) As
 End Function
 
 ''
-' VBA-UTC v1.0.0-rc.3
+' VBA-UTC v1.0.0-rc.4
 ' (c) Tim Hall - https://github.com/VBA-tools/VBA-UtcConverter
 '
 ' UTC/ISO 8601 Converter for VBA
@@ -691,8 +704,9 @@ End Function
 ' 10013 - ISO 8601 parsing error
 ' 10014 - ISO 8601 conversion error
 '
-' @author: tim.hall.engr@gmail.com
-' @license: MIT (http://www.opensource.org/licenses/mit-license.php)
+' @module UtcConverter
+' @author tim.hall.engr@gmail.com
+' @license MIT (http://www.opensource.org/licenses/mit-license.php)
 ' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ '
 
 ' (Declarations moved to top)
@@ -704,9 +718,10 @@ End Function
 ''
 ' Parse UTC date to local date
 '
-' @param {Date} utc_UtcDate
+' @method ParseUtc
+' @param {Date} UtcDate
 ' @return {Date} Local date
-' -------------------------------------- '
+''
 Public Function ParseUtc(utc_UtcDate As Date) As Date
     On Error GoTo utc_ErrorHandling
     
@@ -731,9 +746,10 @@ End Function
 ''
 ' Convert local date to UTC date
 '
+' @method ConvertToUrc
 ' @param {Date} utc_LocalDate
 ' @return {Date} UTC date
-' -------------------------------------- '
+''
 Public Function ConvertToUtc(utc_LocalDate As Date) As Date
     On Error GoTo utc_ErrorHandling
     
@@ -758,9 +774,10 @@ End Function
 ''
 ' Parse ISO 8601 date string to local date
 '
+' @method ParseIso
 ' @param {Date} utc_IsoString
 ' @return {Date} Local date
-' -------------------------------------- '
+''
 Public Function ParseIso(utc_IsoString As String) As Date
     On Error GoTo utc_ErrorHandling
     
@@ -832,9 +849,10 @@ End Function
 ''
 ' Convert local date to ISO 8601 string
 '
+' @method ConvertToIso
 ' @param {Date} utc_LocalDate
 ' @return {Date} ISO 8601 string
-' -------------------------------------- '
+''
 Public Function ConvertToIso(utc_LocalDate As Date) As String
     On Error GoTo utc_ErrorHandling
     
