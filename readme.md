@@ -11,7 +11,7 @@ Tested in Windows Excel 2013 and Excel for Mac 2011, but should apply to 2007+.
 
 # Example
 
-```VB
+```VB.net
 Dim Json As Object
 Set Json = JsonConverter.ParseJSON("{""a"":123,""b"":[1,2,3,4],""c"":{""d"":456}}")
 
