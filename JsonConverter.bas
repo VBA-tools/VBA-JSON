@@ -462,9 +462,7 @@ Private Function json_ParseNumber(json_String As String, ByRef json_Index As Lon
             If json_ConvertLargeNumbersToString And Len(json_Value) >= 16 Then
                 json_ParseNumber = json_Value
             Else
-                ' Guard for regional settings that use "," for decimal
-                ' CStr(0.1) -> "0.1" or "0,1" based on regional settings -> Replace "." with "." or ","
-                json_Value = VBA.Replace(json_Value, ".", VBA.Mid$(VBA.CStr(0.1), 2, 1))
+                ' VBA.Val does not use regional settings, so guard for comma is not needed
                 json_ParseNumber = VBA.Val(json_Value)
             End If
             Exit Function
