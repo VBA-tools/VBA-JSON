@@ -2,7 +2,7 @@
 
 JSON conversion and parsing for VBA (Windows and Mac Excel, Access, and other Office applications). 
 It grew out of the excellent project [vba-json](https://code.google.com/p/vba-json/), 
-with additions and improvements made to resolve bugs and improve performance (as part of [Excel-REST](https://github.com/timhall/Excel-REST)).
+with additions and improvements made to resolve bugs and improve performance (as part of [VBA-Web](https://github.com/VBA-tools/VBA-Web)).
 
 Tested in Windows Excel 2013 and Excel for Mac 2011, but should apply to 2007+. 
 
