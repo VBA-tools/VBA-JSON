@@ -502,6 +502,13 @@ Private Function json_Encode(ByVal json_Text As Variant) As String
     For json_Index = 1 To VBA.Len(json_Text)
         json_Char = VBA.Mid$(json_Text, json_Index, 1)
         json_AscCode = VBA.AscW(json_Char)
+
+        ' When AscW returns a negative number, it returns the twos complement form of that number.
+        ' To convert the twos complement notation into normal binary notation, add 0xFFF to the return result.
+        ' https://support.microsoft.com/en-us/kb/272138        
+        If json_AscCode < 0 Then
+            json_AscCode = json_AscCode + 65536
+        End If
         
         Select Case json_AscCode
         ' " -> 34 -> \"
