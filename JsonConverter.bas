@@ -503,6 +503,8 @@ Private Function json_Encode(ByVal json_Text As Variant) As String
         json_Char = VBA.Mid$(json_Text, json_Index, 1)
         json_AscCode = VBA.AscW(json_Char)
         
+        If json_AscCode < 0 Then json_AscCode = json_AscCode + 65536
+        
         Select Case json_AscCode
         ' " -> 34 -> \"
         Case 34
