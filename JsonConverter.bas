@@ -1,6 +1,6 @@
 Attribute VB_Name = "JsonConverter"
 ''
-' VBA-JSON v1.0.2
+' VBA-JSON v1.0.3
 ' (c) Tim Hall - https://github.com/VBA-tools/VBA-JSON
 '
 ' JSON Converter for VBA
@@ -505,7 +505,7 @@ Private Function json_Encode(ByVal json_Text As Variant) As String
 
         ' When AscW returns a negative number, it returns the twos complement form of that number.
         ' To convert the twos complement notation into normal binary notation, add 0xFFF to the return result.
-        ' https://support.microsoft.com/en-us/kb/272138        
+        ' https://support.microsoft.com/en-us/kb/272138
         If json_AscCode < 0 Then
             json_AscCode = json_AscCode + 65536
         End If
