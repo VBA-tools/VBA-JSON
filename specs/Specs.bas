@@ -103,11 +103,13 @@ Public Function Specs() As SpecSuite
         .Expect(JsonObject(1)).ToEqual "123456789012345678901234567890"
         .Expect(JsonObject(2)).ToEqual "1.123456789012345678901234567890"
         
+        JsonConverter.JsonOptions.UseDoubleForLargeNumbers = True
         JsonString = "[123456789012345678901234567890]"
-        Set JsonObject = JsonConverter.ParseJson(JsonString, False)
+        Set JsonObject = JsonConverter.ParseJson(JsonString)
         
         .Expect(JsonObject).ToNotBeUndefined
         .Expect(JsonObject(1)).ToEqual 1.23456789012346E+29
+        JsonConverter.JsonOptions.UseDoubleForLargeNumbers = False
     End With
     
     With Specs.It("should parse double-backslash as backslash")
@@ -189,8 +191,10 @@ Public Function Specs() As SpecSuite
         JsonString = JsonConverter.ConvertToJson(Array("123456789012345678901234567890", "1.123456789012345678901234567890", "1234567890123456F"))
         .Expect(JsonString).ToEqual "[123456789012345678901234567890,1.123456789012345678901234567890,""1234567890123456F""]"
         
-        JsonString = JsonConverter.ConvertToJson(Array("123456789012345678901234567890"), False)
+        JsonConverter.JsonOptions.UseDoubleForLargeNumbers = True
+        JsonString = JsonConverter.ConvertToJson(Array("123456789012345678901234567890"))
         .Expect(JsonString).ToEqual "[""123456789012345678901234567890""]"
+        JsonConverter.JsonOptions.UseDoubleForLargeNumbers = False
     End With
     
     With Specs.It("should convert dates to ISO 8601")
