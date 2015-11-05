@@ -103,11 +103,13 @@ Public Function Specs() As SpecSuite
         .Expect(JsonObject(1)).ToEqual "123456789012345678901234567890"
         .Expect(JsonObject(2)).ToEqual "1.123456789012345678901234567890"
         
+        JsonConverter.JsonOptions.UseDoubleForLargeNumbers = True
         JsonString = "[123456789012345678901234567890]"
-        Set JsonObject = JsonConverter.ParseJson(JsonString, False)
+        Set JsonObject = JsonConverter.ParseJson(JsonString)
         
         .Expect(JsonObject).ToNotBeUndefined
         .Expect(JsonObject(1)).ToEqual 1.23456789012346E+29
+        JsonConverter.JsonOptions.UseDoubleForLargeNumbers = False
     End With
     
     With Specs.It("should parse double-backslash as backslash")
@@ -137,6 +139,19 @@ Public Function Specs() As SpecSuite
         .Expect(JsonObject).ToNotBeUndefined
         .Expect(JsonObject.Exists("a b  c")).ToEqual True
         .Expect(JsonObject("a b  c")).ToEqual "d e  f"
+    End With
+    
+    With Specs.It("should allow unquoted keys with option")
+        JsonConverter.JsonOptions.AllowUnquotedKeys = True
+        JsonString = "{a:""a"",b     :""b""}"
+        Set JsonObject = JsonConverter.ParseJson(JsonString)
+
+        .Expect(JsonObject).ToNotBeUndefined
+        .Expect(JsonObject.Exists("a")).ToEqual True
+        .Expect(JsonObject("a")).ToEqual "a"
+        .Expect(JsonObject.Exists("b")).ToEqual True
+        .Expect(JsonObject("b")).ToEqual "b"
+        JsonConverter.JsonOptions.AllowUnquotedKeys = False
     End With
     
     ' ============================================= '
@@ -189,8 +204,10 @@ Public Function Specs() As SpecSuite
         JsonString = JsonConverter.ConvertToJson(Array("123456789012345678901234567890", "1.123456789012345678901234567890", "1234567890123456F"))
         .Expect(JsonString).ToEqual "[123456789012345678901234567890,1.123456789012345678901234567890,""1234567890123456F""]"
         
-        JsonString = JsonConverter.ConvertToJson(Array("123456789012345678901234567890"), False)
+        JsonConverter.JsonOptions.UseDoubleForLargeNumbers = True
+        JsonString = JsonConverter.ConvertToJson(Array("123456789012345678901234567890"))
         .Expect(JsonString).ToEqual "[""123456789012345678901234567890""]"
+        JsonConverter.JsonOptions.UseDoubleForLargeNumbers = False
     End With
     
     With Specs.It("should convert dates to ISO 8601")
@@ -235,10 +252,22 @@ Public Function Specs() As SpecSuite
     
     With Specs.It("should json-encode strings")
         Dim Strings As Variant
-        Strings = Array("""\/" & vbCrLf & vbTab & vbBack & vbFormFeed, ChrW(128) & ChrW(32767), "#$%&{|}~")
+        Strings = Array("""\" & vbCrLf & vbTab & vbBack & vbFormFeed, ChrW(128) & ChrW(32767), "#$%&{|}~")
         
         JsonString = JsonConverter.ConvertToJson(Strings)
-        .Expect(JsonString).ToEqual "[""\""\\\/\r\n\t\b\f"",""\u0080\u7FFF"",""#$%&{|}~""]"
+        .Expect(JsonString).ToEqual "[""\""\\\r\n\t\b\f"",""\u0080\u7FFF"",""#$%&{|}~""]"
+    End With
+    
+    With Specs.It("should escape solidus with option")
+        Strings = Array("a/b")
+        
+        JsonString = JsonConverter.ConvertToJson(Strings)
+        .Expect(JsonString).ToEqual "[""a/b""]"
+        
+        JsonConverter.JsonOptions.EscapeSolidus = True
+        JsonString = JsonConverter.ConvertToJson(Strings)
+        .Expect(JsonString).ToEqual "[""a\/b""]"
+        JsonConverter.JsonOptions.EscapeSolidus = False
     End With
     
     ' ============================================= '
