@@ -141,6 +141,19 @@ Public Function Specs() As SpecSuite
         .Expect(JsonObject("a b  c")).ToEqual "d e  f"
     End With
     
+    With Specs.It("should allow unquoted keys with option")
+        JsonConverter.JsonOptions.AllowUnquotedKeys = True
+        JsonString = "{a:""a"",b     :""b""}"
+        Set JsonObject = JsonConverter.ParseJson(JsonString)
+
+        .Expect(JsonObject).ToNotBeUndefined
+        .Expect(JsonObject.Exists("a")).ToEqual True
+        .Expect(JsonObject("a")).ToEqual "a"
+        .Expect(JsonObject.Exists("b")).ToEqual True
+        .Expect(JsonObject("b")).ToEqual "b"
+        JsonConverter.JsonOptions.AllowUnquotedKeys = False
+    End With
+    
     ' ============================================= '
     ' ConvertTOJSON
     ' ============================================= '

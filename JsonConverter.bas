@@ -133,6 +133,7 @@ Private Type json_Options
     ' By default, VBA-JSON will use String for numbers longer than 15 characters that contain only digits
     ' to override set `JsonConverter.JsonOptions.UseDoubleForLargeNumbers = True`
     UseDoubleForLargeNumbers As Boolean
+    AllowUnquotedKeys As Boolean
 End Type
 Public JsonOptions As json_Options
 
@@ -491,9 +492,9 @@ End Function
 
 Private Function json_ParseKey(json_String As String, ByRef json_Index As Long) As String
     ' Parse key with single or double quotes
-    If (VBA.Mid$(json_String, json_Index, 1) = """") Or (VBA.Mid$(json_String, json_Index, 1) = "'") Then
+    If VBA.Mid$(json_String, json_Index, 1) = """" Or VBA.Mid$(json_String, json_Index, 1) = "'" Then
         json_ParseKey = json_ParseString(json_String, json_Index)
-    Else
+    ElseIf JsonConverter.JsonOptions.AllowUnquotedKeys Then
         Dim json_Char As String
         Do While json_Index > 0 And json_Index <= Len(json_String)
             json_Char = VBA.Mid$(json_String, json_Index, 1)
@@ -504,6 +505,8 @@ Private Function json_ParseKey(json_String As String, ByRef json_Index As Long) 
                 Exit Do
             End If
         Loop
+    Else
+        Err.Raise 10001, "JSONConverter", json_ParseErrorMessage(json_String, json_Index, "Expecting '""' or '''")
     End If
     
     ' Check for colon and skip if present or throw if not present
