@@ -1,6 +1,6 @@
 Attribute VB_Name = "JsonConverter"
 ''
-' VBA-JSON v1.0.3
+' VBA-JSON v2.0.0
 ' (c) Tim Hall - https://github.com/VBA-tools/VBA-JSON
 '
 ' JSON Converter for VBA
@@ -133,7 +133,11 @@ Private Type json_Options
     ' By default, VBA-JSON will use String for numbers longer than 15 characters that contain only digits
     ' to override set `JsonConverter.JsonOptions.UseDoubleForLargeNumbers = True`
     UseDoubleForLargeNumbers As Boolean
+    
+    ' The JSON standard requires object keys to be quoted (" or '), use this option to allow unquoted keys
     AllowUnquotedKeys As Boolean
+    
+    ' The solidus (/) is not required to be escaped, use this option to escape them as \/ in ConvertToJson
     EscapeSolidus As Boolean
 End Type
 Public JsonOptions As json_Options
