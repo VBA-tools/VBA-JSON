@@ -252,10 +252,22 @@ Public Function Specs() As SpecSuite
     
     With Specs.It("should json-encode strings")
         Dim Strings As Variant
-        Strings = Array("""\/" & vbCrLf & vbTab & vbBack & vbFormFeed, ChrW(128) & ChrW(32767), "#$%&{|}~")
+        Strings = Array("""\" & vbCrLf & vbTab & vbBack & vbFormFeed, ChrW(128) & ChrW(32767), "#$%&{|}~")
         
         JsonString = JsonConverter.ConvertToJson(Strings)
-        .Expect(JsonString).ToEqual "[""\""\\\/\r\n\t\b\f"",""\u0080\u7FFF"",""#$%&{|}~""]"
+        .Expect(JsonString).ToEqual "[""\""\\\r\n\t\b\f"",""\u0080\u7FFF"",""#$%&{|}~""]"
+    End With
+    
+    With Specs.It("should escape solidus with option")
+        Strings = Array("a/b")
+        
+        JsonString = JsonConverter.ConvertToJson(Strings)
+        .Expect(JsonString).ToEqual "[""a/b""]"
+        
+        JsonConverter.JsonOptions.EscapeSolidus = True
+        JsonString = JsonConverter.ConvertToJson(Strings)
+        .Expect(JsonString).ToEqual "[""a\/b""]"
+        JsonConverter.JsonOptions.EscapeSolidus = False
     End With
     
     ' ============================================= '

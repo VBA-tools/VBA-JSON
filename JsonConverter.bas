@@ -134,6 +134,7 @@ Private Type json_Options
     ' to override set `JsonConverter.JsonOptions.UseDoubleForLargeNumbers = True`
     UseDoubleForLargeNumbers As Boolean
     AllowUnquotedKeys As Boolean
+    EscapeSolidus As Boolean
 End Type
 Public JsonOptions As json_Options
 
@@ -539,33 +540,37 @@ Private Function json_Encode(ByVal json_Text As Variant) As String
             json_AscCode = json_AscCode + 65536
         End If
         
+        ' From spec, ", \, and control characters must be escaped (solidus is optional)
+        
         Select Case json_AscCode
-        ' " -> 34 -> \"
         Case 34
+            ' " -> 34 -> \"
             json_Char = "\"""
-        ' \ -> 92 -> \\
         Case 92
+            ' \ -> 92 -> \\
             json_Char = "\\"
-        ' / -> 47 -> \/
         Case 47
-            json_Char = "\/"
-        ' backspace -> 8 -> \b
+            ' / -> 47 -> \/ (optional)
+            If JsonConverter.JsonOptions.EscapeSolidus Then
+                json_Char = "\/"
+            End If
         Case 8
+            ' backspace -> 8 -> \b
             json_Char = "\b"
-        ' form feed -> 12 -> \f
         Case 12
+            ' form feed -> 12 -> \f
             json_Char = "\f"
-        ' line feed -> 10 -> \n
         Case 10
+            ' line feed -> 10 -> \n
             json_Char = "\n"
-        ' carriage return -> 13 -> \r
         Case 13
+            ' carriage return -> 13 -> \r
             json_Char = "\r"
-        ' tab -> 9 -> \t
         Case 9
+            ' tab -> 9 -> \t
             json_Char = "\t"
-        ' Non-ascii characters -> convert to 4-digit hex
         Case 0 To 31, 127 To 65535
+            ' Non-ascii characters -> convert to 4-digit hex
             json_Char = "\u" & VBA.Right$("0000" & VBA.Hex$(json_AscCode), 4)
         End Select
             
