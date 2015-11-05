@@ -23,3 +23,13 @@ Json("c")("e") = 789
 Debug.Print JsonConverter.ConvertToJson(Json) 
 ' -> "{""a"":123,""b"":[1,2,3,4],""c"":{""d"":456,""e"":789}}"
 ```
+
+## Options
+
+VBA-JSON includes a few options for customizing parsing/conversion if needed:
+
+- __UseDoubleForLargeNumbers__ (Default = `False`) VBA only stores 15 significant digits, so any numbers larger than that are truncated.
+  This can lead to issues when BIGINT's are used (e.g. for Ids or Credit Cards), as they will be invalid above 15 digits.
+  By default, VBA-JSON will use `String` for numbers longer than 15 characters that contain only digits, use this option to use `Double` instead.
+- __AllowUnquotedKeys__ (Default = `False`) The JSON standard requires object keys to be quoted (`"` or `'`), use this option to allow unquoted keys.
+- __EscapeSolidus__ (Default = `False`) The solidus (/) is not required to be escaped, use this option to escape them as `\/` in `ConvertToJson`.
