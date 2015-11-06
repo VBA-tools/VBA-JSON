@@ -213,7 +213,7 @@ Public Function ConvertToJson(ByVal json_DictionaryCollectionOrArray As Variant)
         ConvertToJson = """" & json_DateStr & """"
     Case VBA.vbString
         ' String (or large number encoded as string)
-        If Not JsonConverter.JsonOptions.UseDoubleForLargeNumbers And json_StringIsLargeNumber(json_DictionaryCollectionOrArray) Then
+        If Not JsonOptions.UseDoubleForLargeNumbers And json_StringIsLargeNumber(json_DictionaryCollectionOrArray) Then
             ConvertToJson = json_DictionaryCollectionOrArray
         Else
             ConvertToJson = """" & json_Encode(json_DictionaryCollectionOrArray) & """"
@@ -484,7 +484,7 @@ Private Function json_ParseNumber(json_String As String, ByRef json_Index As Lon
             ' See: http://support.microsoft.com/kb/269370
             '
             ' Fix: Parse -> String, Convert -> String longer than 15 characters containing only numbers and decimal points -> Number
-            If Not JsonConverter.JsonOptions.UseDoubleForLargeNumbers And Len(json_Value) >= 16 Then
+            If Not JsonOptions.UseDoubleForLargeNumbers And Len(json_Value) >= 16 Then
                 json_ParseNumber = json_Value
             Else
                 ' VBA.Val does not use regional settings, so guard for comma is not needed
@@ -499,7 +499,7 @@ Private Function json_ParseKey(json_String As String, ByRef json_Index As Long) 
     ' Parse key with single or double quotes
     If VBA.Mid$(json_String, json_Index, 1) = """" Or VBA.Mid$(json_String, json_Index, 1) = "'" Then
         json_ParseKey = json_ParseString(json_String, json_Index)
-    ElseIf JsonConverter.JsonOptions.AllowUnquotedKeys Then
+    ElseIf JsonOptions.AllowUnquotedKeys Then
         Dim json_Char As String
         Do While json_Index > 0 And json_Index <= Len(json_String)
             json_Char = VBA.Mid$(json_String, json_Index, 1)
@@ -555,7 +555,7 @@ Private Function json_Encode(ByVal json_Text As Variant) As String
             json_Char = "\\"
         Case 47
             ' / -> 47 -> \/ (optional)
-            If JsonConverter.JsonOptions.EscapeSolidus Then
+            If JsonOptions.EscapeSolidus Then
                 json_Char = "\/"
             End If
         Case 8
