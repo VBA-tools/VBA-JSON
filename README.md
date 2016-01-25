@@ -37,3 +37,8 @@ VBA-JSON includes a few options for customizing parsing/conversion if needed:
 ```VB.net
 JsonConverter.JsonOptions.EscapeSolidus = True
 ```
+
+## Installation
+
+1. Download the [latest release](https://github.com/VBA-tools/VBA-JSON/releases)
+2. Import `JsonConverter.bas` into your project (Open VBA Editor, `Alt + F11`; File > Import File)
