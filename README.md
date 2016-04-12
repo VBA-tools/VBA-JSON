@@ -7,7 +7,7 @@ with additions and improvements made to resolve bugs and improve performance (as
 Tested in Windows Excel 2013 and Excel for Mac 2011, but should apply to 2007+.
 
 - For Windows-only support, include a reference to "Microsoft Scripting Runtime"
-- For Mac and Windows support, include [VBA-Dictionary](https://github.com/VBA-tools/VBA-Dictionary).
+- For Mac and Windows support, include [VBA-Dictionary](https://github.com/VBA-tools/VBA-Dictionary)
 
 # Example
 
@@ -23,7 +23,7 @@ Json("c")("e") = 789
 Debug.Print JsonConverter.ConvertToJson(Json)
 ' -> "{""a"":123,""b"":[1,2,3,4],""c"":{""d"":456,""e"":789}}"
 ```
-VBA-JSON [Tutorial video](https://youtu.be/CFFLRmHsEAs)
+
 ## Options
 
 VBA-JSON includes a few options for customizing parsing/conversion if needed:
@@ -42,3 +42,10 @@ JsonConverter.JsonOptions.EscapeSolidus = True
 
 1. Download the [latest release](https://github.com/VBA-tools/VBA-JSON/releases)
 2. Import `JsonConverter.bas` into your project (Open VBA Editor, `Alt + F11`; File > Import File)
+3. Add `Dictionary` reference/class
+   - For Windows-only, include a reference to "Microsoft Scripting Runtime"
+   - For Windows and Mac, include [VBA-Dictionary](https://github.com/VBA-tools/VBA-Dictionary)
+
+## Resources
+
+- [Tutorial Video (Red Stapler)](https://youtu.be/CFFLRmHsEAs)
