@@ -23,7 +23,7 @@ Json("c")("e") = 789
 Debug.Print JsonConverter.ConvertToJson(Json)
 ' -> "{""a"":123,""b"":[1,2,3,4],""c"":{""d"":456,""e"":789}}"
 ```
-
+VBA-JSON [Tutorial video](https://youtu.be/CFFLRmHsEAs)
 ## Options
 
 VBA-JSON includes a few options for customizing parsing/conversion if needed:
