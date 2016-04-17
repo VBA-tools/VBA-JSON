@@ -9,11 +9,11 @@ Tested in Windows Excel 2013 and Excel for Mac 2011, but should apply to 2007+.
 - For Windows-only support, include a reference to "Microsoft Scripting Runtime"
 - For Mac and Windows support, include [VBA-Dictionary](https://github.com/VBA-tools/VBA-Dictionary)
 
-# Example
+# Examples
 
-```VB.net
+```vb
 Dim Json As Object
-Set Json = JsonConverter.ParseJSON("{""a"":123,""b"":[1,2,3,4],""c"":{""d"":456}}")
+Set Json = JsonConverter.ParseJson("{""a"":123,""b"":[1,2,3,4],""c"":{""d"":456}}")
 
 ' Json("a") -> 123
 ' Json("b")(2) -> 2
@@ -22,6 +22,44 @@ Json("c")("e") = 789
 
 Debug.Print JsonConverter.ConvertToJson(Json)
 ' -> "{""a"":123,""b"":[1,2,3,4],""c"":{""d"":456,""e"":789}}"
+```
+
+```vb
+' Advanced example: Read .json file and load into sheet (Windows-only)
+' (add reference to Microsoft Scripting Runtime)
+' {"values":[{"a":1,"b":2,"c": 3},...]}
+
+Dim FSO As New FileSystemObject
+Dim JsonTS As TextStream
+Dim JsonText As String
+Dim Parsed As Dictionary
+
+' Read .json file
+Set JsonTS = FSO.OpenTextFile("example.json", ForReading)
+JsonText = JsonTS.ReadAll
+JsonTS.Close
+
+' Parse json to Dictionary
+' "values" is parsed as Collection
+' each item in "values" is parsed as Dictionary
+Set Parsed = JsonConverter.ParseJson(JsonText)
+
+' Prepare and write values to sheet
+Dim Values As Variant
+ReDim Values(Parsed("values").Count, 3)
+
+Dim Value As Dictionary
+Dim i As Long
+
+i = 0
+For Each Value In Parsed("values")
+  Values(i, 0) = Value("a")
+  Values(i, 1) = Value("b")
+  Values(i, 2) = Value("c")
+  i = i + 1
+Next Value
+
+Sheets("example").Range(Cells(1, 1), Cells(Parsed("values").Count, 3)) = Values
 ```
 
 ## Options
