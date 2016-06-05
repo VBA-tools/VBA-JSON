@@ -7,6 +7,8 @@ Public Function Specs() As SpecSuite
     
     Dim JsonString As String
     Dim JsonObject As Object
+    Dim EmptyVariant As Variant
+    Dim NothingObject As Object
     
     ' ============================================= '
     ' Parse JSON
@@ -270,6 +272,35 @@ Public Function Specs() As SpecSuite
         JsonString = JsonConverter.ConvertToJson(Strings)
         .Expect(JsonString).ToEqual "[""a\/b""]"
         JsonConverter.JsonOptions.EscapeSolidus = False
+    End With
+    
+    With Specs.It("should handle Empty and Nothing in arrays as null")
+        JsonString = JsonConverter.ConvertToJson(Array("a", EmptyVariant, NothingObject, Empty, Nothing, "z"))
+        .Expect(JsonString).ToEqual "[""a"",null,null,null,null,""z""]"
+
+        Set JsonObject = New Collection
+        JsonObject.Add "a"
+        JsonObject.Add EmptyVariant
+        JsonObject.Add NothingObject
+        JsonObject.Add Empty
+        JsonObject.Add Nothing
+        JsonObject.Add "z"
+    
+        JsonString = JsonConverter.ConvertToJson(JsonObject)
+        .Expect(JsonString).ToEqual "[""a"",null,null,null,null,""z""]"
+    End With
+    
+    With Specs.It("should handle Empty and Nothing in objects as undefined")
+        Set JsonObject = New Dictionary
+        JsonObject.Add "a", "a"
+        JsonObject.Add "b", EmptyVariant
+        JsonObject.Add "c", NothingObject
+        JsonObject.Add "d", Empty
+        JsonObject.Add "e", Nothing
+        JsonObject.Add "z", "z"
+        
+        JsonString = JsonConverter.ConvertToJson(JsonObject)
+        .Expect(JsonString).ToEqual "{""a"":""a"",""z"":""z""}"
     End With
     
     ' ============================================= '
