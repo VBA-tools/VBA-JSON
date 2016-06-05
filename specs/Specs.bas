@@ -96,12 +96,14 @@ Public Function Specs() As SpecSuite
     End With
     
     With Specs.It("should handle very long numbers as strings (e.g. BIGINT)")
-        JsonString = "[123456789012345678901234567890, 1.123456789012345678901234567890]"
+        JsonString = "[123456789012345678901234567890, 1.123456789012345678901234567890, 123456789012345, 1.23456789012345]"
         Set JsonObject = JsonConverter.ParseJson(JsonString)
         
         .Expect(JsonObject).ToNotBeUndefined
         .Expect(JsonObject(1)).ToEqual "123456789012345678901234567890"
         .Expect(JsonObject(2)).ToEqual "1.123456789012345678901234567890"
+        .Expect(JsonObject(3)).ToEqual 123456789012345#
+        .Expect(JsonObject(4)).ToEqual 1.23456789012345
         
         JsonConverter.JsonOptions.UseDoubleForLargeNumbers = True
         JsonString = "[123456789012345678901234567890]"
