@@ -7,11 +7,14 @@ Public Function Specs() As SpecSuite
     
     Dim JsonString As String
     Dim JsonObject As Object
+    Dim NestedObject As Object
     Dim EmptyVariant As Variant
     Dim NothingObject As Object
     
+    Dim MultiDimensionalArray(1, 1) As Variant
+    
     ' ============================================= '
-    ' Parse JSON
+    ' ParseJson
     ' ============================================= '
     
     With Specs.It("should parse object string")
@@ -159,7 +162,7 @@ Public Function Specs() As SpecSuite
     End With
     
     ' ============================================= '
-    ' ConvertTOJSON
+    ' ConvertToJson
     ' ============================================= '
     
     With Specs.It("should convert object to string")
@@ -224,12 +227,10 @@ Public Function Specs() As SpecSuite
     
     With Specs.It("should convert 2D arrays")
         ' Checks https://code.google.com/p/vba-json/issues/detail?id=8
-        Dim MultiDimensionalArray(1, 1) As Variant
         MultiDimensionalArray(0, 0) = 1
         MultiDimensionalArray(0, 1) = 2
         MultiDimensionalArray(1, 0) = 3
         MultiDimensionalArray(1, 1) = 4
-        
         JsonString = JsonConverter.ConvertToJson(MultiDimensionalArray)
         .Expect(JsonString).ToEqual "[[1,2],[3,4]]"
     End With
@@ -301,6 +302,79 @@ Public Function Specs() As SpecSuite
         
         JsonString = JsonConverter.ConvertToJson(JsonObject)
         .Expect(JsonString).ToEqual "{""a"":""a"",""z"":""z""}"
+    End With
+    
+    With Specs.It("should use whitespace number/string")
+        ' Nested, plain array + 2
+        JsonString = JsonConverter.ConvertToJson(Array(1, Array(2, Array(3))), 2)
+        .Expect(JsonString).ToEqual _
+            "[" & vbNewLine & _
+            "  1," & vbNewLine & _
+            "  [" & vbNewLine & _
+            "    2," & vbNewLine & _
+            "    [" & vbNewLine & _
+            "      3" & vbNewLine & _
+            "    ]" & vbNewLine & _
+            "  ]" & vbNewLine & _
+            "]"
+        
+        ' Nested Dictionary + Tab
+        Set JsonObject = New Dictionary
+        JsonObject.Add "a", Array(1, 2, 3)
+        JsonObject.Add "b", "c"
+        Set NestedObject = New Dictionary
+        NestedObject.Add "d", "e"
+        JsonObject.Add "nested", NestedObject
+        
+        JsonString = JsonConverter.ConvertToJson(JsonObject, VBA.vbTab)
+        .Expect(JsonString).ToEqual _
+            "{" & vbNewLine & _
+            vbTab & """a"": [" & vbNewLine & _
+            vbTab & vbTab & "1," & vbNewLine & _
+            vbTab & vbTab & "2," & vbNewLine & _
+            vbTab & vbTab & "3" & vbNewLine & _
+            vbTab & "]," & vbNewLine & _
+            vbTab & """b"": ""c""," & vbNewLine & _
+            vbTab & """nested"": {" & vbNewLine & _
+            vbTab & vbTab & """d"": ""e""" & vbNewLine & _
+            vbTab & "}" & vbNewLine & _
+            "}"
+            
+        ' Multi-dimensional array + 4
+        MultiDimensionalArray(0, 0) = 1
+        MultiDimensionalArray(0, 1) = 2
+        MultiDimensionalArray(1, 0) = Array(1, 2, 3)
+        MultiDimensionalArray(1, 1) = 4
+        JsonString = JsonConverter.ConvertToJson(MultiDimensionalArray, 4)
+        .Expect(JsonString).ToEqual _
+            "[" & vbNewLine & _
+            "    [" & vbNewLine & _
+            "        1," & vbNewLine & _
+            "        2" & vbNewLine & _
+            "    ]," & vbNewLine & _
+            "    [" & vbNewLine & _
+            "        [" & vbNewLine & _
+            "            1," & vbNewLine & _
+            "            2," & vbNewLine & _
+            "            3" & vbNewLine & _
+            "        ]," & vbNewLine & _
+            "        4" & vbNewLine & _
+            "    ]" & vbNewLine & _
+            "]"
+        
+        ' Collection + "-"
+        Set JsonObject = New Collection
+        JsonObject.Add Array(1, 2, 3)
+        
+        JsonString = JsonConverter.ConvertToJson(JsonObject, "-")
+        .Expect(JsonString).ToEqual _
+            "[" & vbNewLine & _
+            "-[" & vbNewLine & _
+            "--1," & vbNewLine & _
+            "--2," & vbNewLine & _
+            "--3" & vbNewLine & _
+            "-]" & vbNewLine & _
+            "]"
     End With
     
     ' ============================================= '
