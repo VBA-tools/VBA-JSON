@@ -47,14 +47,10 @@ Attribute VB_Name = "JsonConverter"
 ' === VBA-UTC Headers
 #If Mac Then
 
-Private Declare Function utc_popen Lib "libc.dylib" Alias "popen" _
-    (ByVal utc_Command As String, ByVal utc_Mode As String) As Long
-Private Declare Function utc_pclose Lib "libc.dylib" Alias "pclose" _
-    (ByVal utc_File As Long) As Long
-Private Declare Function utc_fread Lib "libc.dylib" Alias "fread" _
-    (ByVal utc_Buffer As String, ByVal utc_Size As Long, ByVal utc_Number As Long, ByVal utc_File As Long) As Long
-Private Declare Function utc_feof Lib "libc.dylib" Alias "feof" _
-    (ByVal utc_File As Long) As Long
+Private Declare Function utc_popen Lib "libc.dylib" Alias "popen" (ByVal utc_Command As String, ByVal utc_Mode As String) As Long
+Private Declare Function utc_pclose Lib "libc.dylib" Alias "pclose" (ByVal utc_File As Long) As Long
+Private Declare Function utc_fread Lib "libc.dylib" Alias "fread" (ByVal utc_Buffer As String, ByVal utc_Size As Long, ByVal utc_Number As Long, ByVal utc_File As Long) As Long
+Private Declare Function utc_feof Lib "libc.dylib" Alias "feof" (ByVal utc_File As Long) As Long
 
 #ElseIf VBA7 Then
 
@@ -122,7 +118,7 @@ Private Declare PtrSafe Sub json_CopyMemory Lib "kernel32" Alias "RtlMoveMemory"
 
 Private Declare Sub json_CopyMemory Lib "kernel32" Alias "RtlMoveMemory" _
     (json_MemoryDestination As Any, json_MemorySource As Any, ByVal json_ByteLength As Long)
-    
+
 #End If
 
 Private Type json_Options
@@ -133,10 +129,10 @@ Private Type json_Options
     ' By default, VBA-JSON will use String for numbers longer than 15 characters that contain only digits
     ' to override set `JsonConverter.JsonOptions.UseDoubleForLargeNumbers = True`
     UseDoubleForLargeNumbers As Boolean
-    
+
     ' The JSON standard requires object keys to be quoted (" or '), use this option to allow unquoted keys
     AllowUnquotedKeys As Boolean
-    
+
     ' The solidus (/) is not required to be escaped, use this option to escape them as \/ in ConvertToJson
     EscapeSolidus As Boolean
 End Type
@@ -157,10 +153,10 @@ Public JsonOptions As json_Options
 Public Function ParseJson(ByVal JsonString As String) As Object
     Dim json_Index As Long
     json_Index = 1
-    
+
     ' Remove vbCr, vbLf, and vbTab from json_String
     JsonString = VBA.Replace(VBA.Replace(VBA.Replace(JsonString, VBA.vbCr, ""), VBA.vbLf, ""), VBA.vbTab, "")
-    
+
     json_SkipSpaces JsonString, json_Index
     Select Case VBA.Mid$(JsonString, json_Index, 1)
     Case "{"
@@ -201,7 +197,7 @@ Public Function ConvertToJson(ByVal JsonValue As Variant, Optional ByVal Whitesp
     Dim json_PrettyPrint As Boolean
     Dim json_Indentation As String
     Dim json_InnerIndentation As String
-    
+
     json_LBound = -1
     json_UBound = -1
     json_IsFirstItem = True
@@ -216,7 +212,7 @@ Public Function ConvertToJson(ByVal JsonValue As Variant, Optional ByVal Whitesp
     Case VBA.vbDate
         ' Date
         json_DateStr = ConvertToIso(VBA.CDate(JsonValue))
-        
+
         ConvertToJson = """" & json_DateStr & """"
     Case VBA.vbString
         ' String (or large number encoded as string)
@@ -241,17 +237,17 @@ Public Function ConvertToJson(ByVal JsonValue As Variant, Optional ByVal Whitesp
                 json_InnerIndentation = VBA.Space$((json_CurrentIndentation + 2) * Whitespace)
             End If
         End If
-    
+
         ' Array
         json_BufferAppend json_buffer, "[", json_BufferPosition, json_BufferLength
-        
+
         On Error Resume Next
-        
+
         json_LBound = LBound(JsonValue, 1)
         json_UBound = UBound(JsonValue, 1)
         json_LBound2D = LBound(JsonValue, 2)
         json_UBound2D = UBound(JsonValue, 2)
-        
+
         If json_LBound >= 0 And json_UBound >= 0 Then
             For json_Index = json_LBound To json_UBound
                 If json_IsFirstItem Then
@@ -260,23 +256,23 @@ Public Function ConvertToJson(ByVal JsonValue As Variant, Optional ByVal Whitesp
                     ' Append comma to previous line
                     json_BufferAppend json_buffer, ",", json_BufferPosition, json_BufferLength
                 End If
-            
+
                 If json_LBound2D >= 0 And json_UBound2D >= 0 Then
                     ' 2D Array
                     If json_PrettyPrint Then
                         json_BufferAppend json_buffer, vbNewLine, json_BufferPosition, json_BufferLength
                     End If
                     json_BufferAppend json_buffer, json_Indentation & "[", json_BufferPosition, json_BufferLength
-                
+
                     For json_Index2D = json_LBound2D To json_UBound2D
                         If json_IsFirstItem2D Then
                             json_IsFirstItem2D = False
                         Else
                             json_BufferAppend json_buffer, ",", json_BufferPosition, json_BufferLength
                         End If
-                        
+
                         json_Converted = ConvertToJson(JsonValue(json_Index, json_Index2D), Whitespace, json_CurrentIndentation + 2)
-                        
+
                         ' For Arrays/Collections, undefined (Empty/Nothing) is treated as null
                         If json_Converted = "" Then
                             ' (nest to only check if converted = "")
@@ -284,24 +280,24 @@ Public Function ConvertToJson(ByVal JsonValue As Variant, Optional ByVal Whitesp
                                 json_Converted = "null"
                             End If
                         End If
-                        
+
                         If json_PrettyPrint Then
                             json_Converted = vbNewLine & json_InnerIndentation & json_Converted
                         End If
-                        
+
                         json_BufferAppend json_buffer, json_Converted, json_BufferPosition, json_BufferLength
                     Next json_Index2D
-                    
+
                     If json_PrettyPrint Then
                         json_BufferAppend json_buffer, vbNewLine, json_BufferPosition, json_BufferLength
                     End If
-                    
+
                     json_BufferAppend json_buffer, json_Indentation & "]", json_BufferPosition, json_BufferLength
                     json_IsFirstItem2D = True
                 Else
                     ' 1D Array
                     json_Converted = ConvertToJson(JsonValue(json_Index), Whitespace, json_CurrentIndentation + 1)
-                    
+
                     ' For Arrays/Collections, undefined (Empty/Nothing) is treated as null
                     If json_Converted = "" Then
                         ' (nest to only check if converted = "")
@@ -309,32 +305,32 @@ Public Function ConvertToJson(ByVal JsonValue As Variant, Optional ByVal Whitesp
                             json_Converted = "null"
                         End If
                     End If
-                    
+
                     If json_PrettyPrint Then
                         json_Converted = vbNewLine & json_Indentation & json_Converted
                     End If
-                
+
                     json_BufferAppend json_buffer, json_Converted, json_BufferPosition, json_BufferLength
                 End If
             Next json_Index
         End If
-        
+
         On Error GoTo 0
-        
+
         If json_PrettyPrint Then
             json_BufferAppend json_buffer, vbNewLine, json_BufferPosition, json_BufferLength
-            
+
             If VBA.VarType(Whitespace) = VBA.vbString Then
                 json_Indentation = VBA.String$(json_CurrentIndentation, Whitespace)
             Else
                 json_Indentation = VBA.Space$(json_CurrentIndentation * Whitespace)
             End If
         End If
-        
+
         json_BufferAppend json_buffer, json_Indentation & "]", json_BufferPosition, json_BufferLength
-        
+
         ConvertToJson = json_BufferToString(json_buffer, json_BufferPosition, json_BufferLength)
-    
+
     ' Dictionary or Collection
     Case VBA.vbObject
         If json_PrettyPrint Then
@@ -356,36 +352,36 @@ Public Function ConvertToJson(ByVal JsonValue As Variant, Optional ByVal Whitesp
                 Else
                     json_SkipItem = False
                 End If
-                
+
                 If Not json_SkipItem Then
                     If json_IsFirstItem Then
                         json_IsFirstItem = False
                     Else
                         json_BufferAppend json_buffer, ",", json_BufferPosition, json_BufferLength
                     End If
-                    
+
                     If json_PrettyPrint Then
                         json_Converted = vbNewLine & json_Indentation & """" & json_Key & """: " & json_Converted
                     Else
                         json_Converted = """" & json_Key & """:" & json_Converted
                     End If
-                    
+
                     json_BufferAppend json_buffer, json_Converted, json_BufferPosition, json_BufferLength
                 End If
             Next json_Key
-            
+
             If json_PrettyPrint Then
                 json_BufferAppend json_buffer, vbNewLine, json_BufferPosition, json_BufferLength
-                
+
                 If VBA.VarType(Whitespace) = VBA.vbString Then
                     json_Indentation = VBA.String$(json_CurrentIndentation, Whitespace)
                 Else
                     json_Indentation = VBA.Space$(json_CurrentIndentation * Whitespace)
                 End If
             End If
-            
+
             json_BufferAppend json_buffer, json_Indentation & "}", json_BufferPosition, json_BufferLength
-        
+
         ' Collection
         ElseIf VBA.TypeName(JsonValue) = "Collection" Then
             json_BufferAppend json_buffer, "[", json_BufferPosition, json_BufferLength
@@ -395,9 +391,9 @@ Public Function ConvertToJson(ByVal JsonValue As Variant, Optional ByVal Whitesp
                 Else
                     json_BufferAppend json_buffer, ",", json_BufferPosition, json_BufferLength
                 End If
-            
+
                 json_Converted = ConvertToJson(json_Value, Whitespace, json_CurrentIndentation + 1)
-                
+
                 ' For Arrays/Collections, undefined (Empty/Nothing) is treated as null
                 If json_Converted = "" Then
                     ' (nest to only check if converted = "")
@@ -405,17 +401,17 @@ Public Function ConvertToJson(ByVal JsonValue As Variant, Optional ByVal Whitesp
                         json_Converted = "null"
                     End If
                 End If
-                
+
                 If json_PrettyPrint Then
                     json_Converted = vbNewLine & json_Indentation & json_Converted
                 End If
-                
+
                 json_BufferAppend json_buffer, json_Converted, json_BufferPosition, json_BufferLength
             Next json_Value
-            
+
             If json_PrettyPrint Then
                 json_BufferAppend json_buffer, vbNewLine, json_BufferPosition, json_BufferLength
-                
+
                 If VBA.VarType(Whitespace) = VBA.vbString Then
                     json_Indentation = VBA.String$(json_CurrentIndentation, Whitespace)
                 Else
@@ -425,7 +421,7 @@ Public Function ConvertToJson(ByVal JsonValue As Variant, Optional ByVal Whitesp
 
             json_BufferAppend json_buffer, json_Indentation & "]", json_BufferPosition, json_BufferLength
         End If
-        
+
         ConvertToJson = json_BufferToString(json_buffer, json_BufferPosition, json_BufferLength)
     Case VBA.vbInteger, VBA.vbLong, VBA.vbSingle, VBA.vbDouble, VBA.vbCurrency, VBA.vbDecimal
         ' Number (use decimals for numbers)
@@ -446,14 +442,14 @@ End Function
 Private Function json_ParseObject(json_String As String, ByRef json_Index As Long) As Dictionary
     Dim json_Key As String
     Dim json_NextChar As String
-    
+
     Set json_ParseObject = New Dictionary
     json_SkipSpaces json_String, json_Index
     If VBA.Mid$(json_String, json_Index, 1) <> "{" Then
         Err.Raise 10001, "JSONConverter", json_ParseErrorMessage(json_String, json_Index, "Expecting '{'")
     Else
         json_Index = json_Index + 1
-        
+
         Do
             json_SkipSpaces json_String, json_Index
             If VBA.Mid$(json_String, json_Index, 1) = "}" Then
@@ -463,7 +459,7 @@ Private Function json_ParseObject(json_String As String, ByRef json_Index As Lon
                 json_Index = json_Index + 1
                 json_SkipSpaces json_String, json_Index
             End If
-            
+
             json_Key = json_ParseKey(json_String, json_Index)
             json_NextChar = json_Peek(json_String, json_Index)
             If json_NextChar = "[" Or json_NextChar = "{" Then
@@ -477,13 +473,13 @@ End Function
 
 Private Function json_ParseArray(json_String As String, ByRef json_Index As Long) As Collection
     Set json_ParseArray = New Collection
-    
+
     json_SkipSpaces json_String, json_Index
     If VBA.Mid$(json_String, json_Index, 1) <> "[" Then
         Err.Raise 10001, "JSONConverter", json_ParseErrorMessage(json_String, json_Index, "Expecting '['")
     Else
         json_Index = json_Index + 1
-        
+
         Do
             json_SkipSpaces json_String, json_Index
             If VBA.Mid$(json_String, json_Index, 1) = "]" Then
@@ -493,7 +489,7 @@ Private Function json_ParseArray(json_String As String, ByRef json_Index As Long
                 json_Index = json_Index + 1
                 json_SkipSpaces json_String, json_Index
             End If
-            
+
             json_ParseArray.Add json_ParseValue(json_String, json_Index)
         Loop
     End If
@@ -533,22 +529,22 @@ Private Function json_ParseString(json_String As String, ByRef json_Index As Lon
     Dim json_buffer As String
     Dim json_BufferPosition As Long
     Dim json_BufferLength As Long
-    
+
     json_SkipSpaces json_String, json_Index
-    
+
     ' Store opening quote to look for matching closing quote
     json_Quote = VBA.Mid$(json_String, json_Index, 1)
     json_Index = json_Index + 1
-    
+
     Do While json_Index > 0 And json_Index <= Len(json_String)
         json_Char = VBA.Mid$(json_String, json_Index, 1)
-        
+
         Select Case json_Char
         Case "\"
             ' Escaped string, \\, or \/
             json_Index = json_Index + 1
             json_Char = VBA.Mid$(json_String, json_Index, 1)
-            
+
             Select Case json_Char
             Case """", "\", "/", "'"
                 json_BufferAppend json_buffer, json_Char, json_BufferPosition, json_BufferLength
@@ -590,12 +586,12 @@ Private Function json_ParseNumber(json_String As String, ByRef json_Index As Lon
     Dim json_Char As String
     Dim json_Value As String
     Dim json_IsLargeNumber As Boolean
-    
+
     json_SkipSpaces json_String, json_Index
-    
+
     Do While json_Index > 0 And json_Index <= Len(json_String)
         json_Char = VBA.Mid$(json_String, json_Index, 1)
-        
+
         If VBA.InStr("+-0123456789.eE", json_Char) Then
             ' Unlikely to have massive number, so use simple append rather than buffer here
             json_Value = json_Value & json_Char
@@ -637,7 +633,7 @@ Private Function json_ParseKey(json_String As String, ByRef json_Index As Long) 
     Else
         Err.Raise 10001, "JSONConverter", json_ParseErrorMessage(json_String, json_Index, "Expecting '""' or '''")
     End If
-    
+
     ' Check for colon and skip if present or throw if not present
     json_SkipSpaces json_String, json_Index
     If VBA.Mid$(json_String, json_Index, 1) <> ":" Then
@@ -669,7 +665,7 @@ Private Function json_Encode(ByVal json_Text As Variant) As String
     Dim json_buffer As String
     Dim json_BufferPosition As Long
     Dim json_BufferLength As Long
-    
+
     For json_Index = 1 To VBA.Len(json_Text)
         json_Char = VBA.Mid$(json_Text, json_Index, 1)
         json_AscCode = VBA.AscW(json_Char)
@@ -680,9 +676,9 @@ Private Function json_Encode(ByVal json_Text As Variant) As String
         If json_AscCode < 0 Then
             json_AscCode = json_AscCode + 65536
         End If
-        
+
         ' From spec, ", \, and control characters must be escaped (solidus is optional)
-        
+
         Select Case json_AscCode
         Case 34
             ' " -> 34 -> \"
@@ -714,10 +710,10 @@ Private Function json_Encode(ByVal json_Text As Variant) As String
             ' Non-ascii characters -> convert to 4-digit hex
             json_Char = "\u" & VBA.Right$("0000" & VBA.Hex$(json_AscCode), 4)
         End Select
-            
+
         json_BufferAppend json_buffer, json_Char, json_BufferPosition, json_BufferLength
     Next json_Index
-    
+
     json_Encode = json_BufferToString(json_buffer, json_BufferPosition, json_BufferLength)
 End Function
 
@@ -737,18 +733,18 @@ End Sub
 Private Function json_StringIsLargeNumber(json_String As Variant) As Boolean
     ' Check if the given string is considered a "large number"
     ' (See json_ParseNumber)
-    
+
     Dim json_Length As Long
     Dim json_CharIndex As Long
     json_Length = VBA.Len(json_String)
-    
+
     ' Length with be at least 16 characters and assume will be less than 100 characters
     If json_Length >= 16 And json_Length <= 100 Then
         Dim json_CharCode As String
         Dim json_Index As Long
-        
+
         json_StringIsLargeNumber = True
-        
+
         For json_CharIndex = 1 To json_Length
             json_CharCode = VBA.Asc(VBA.Mid$(json_String, json_CharIndex, 1))
             Select Case json_CharCode
@@ -771,10 +767,10 @@ Private Function json_ParseErrorMessage(json_String As String, ByRef json_Index 
     ' {"abcde":True}
     '          ^
     ' Expecting 'STRING', 'NUMBER', null, true, false, '{', or '['
-    
+
     Dim json_StartIndex As Long
     Dim json_StopIndex As Long
-    
+
     ' Include 10 characters before and after error (if possible)
     json_StartIndex = json_Index - 10
     json_StopIndex = json_Index + 10
@@ -819,14 +815,14 @@ Private Sub json_BufferAppend(ByRef json_buffer As String, _
 
     Dim json_AppendLength As Long
     Dim json_LengthPlusPosition As Long
-    
+
     json_AppendLength = VBA.LenB(json_Append)
     json_LengthPlusPosition = json_AppendLength + json_BufferPosition
-    
+
     If json_LengthPlusPosition > json_BufferLength Then
         ' Appending would overflow buffer, add chunks until buffer is long enough
         Dim json_TemporaryLength As Long
-        
+
         json_TemporaryLength = json_BufferLength
         Do While json_TemporaryLength < json_LengthPlusPosition
             ' Initially, initialize string with 255 characters,
@@ -839,17 +835,17 @@ Private Sub json_BufferAppend(ByRef json_buffer As String, _
                 json_TemporaryLength = json_TemporaryLength + 16384
             End If
         Loop
-        
+
         json_buffer = json_buffer & VBA.Space$((json_TemporaryLength - json_BufferLength) \ 2)
         json_BufferLength = json_TemporaryLength
     End If
-    
+
     ' Copy memory from append to buffer at buffer position
     json_CopyMemory ByVal json_UnsignedAdd(StrPtr(json_buffer), _
                     json_BufferPosition), _
                     ByVal StrPtr(json_Append), _
                     json_AppendLength
-    
+
     json_BufferPosition = json_BufferPosition + json_AppendLength
 #End If
 End Sub
@@ -912,16 +908,16 @@ End Function
 ''
 Public Function ParseUtc(utc_UtcDate As Date) As Date
     On Error GoTo utc_ErrorHandling
-    
+
 #If Mac Then
     ParseUtc = utc_ConvertDate(utc_UtcDate)
 #Else
     Dim utc_TimeZoneInfo As utc_TIME_ZONE_INFORMATION
     Dim utc_LocalDate As utc_SYSTEMTIME
-    
+
     utc_GetTimeZoneInformation utc_TimeZoneInfo
     utc_SystemTimeToTzSpecificLocalTime utc_TimeZoneInfo, utc_DateToSystemTime(utc_UtcDate), utc_LocalDate
-    
+
     ParseUtc = utc_SystemTimeToDate(utc_LocalDate)
 #End If
 
@@ -941,21 +937,21 @@ End Function
 ''
 Public Function ConvertToUtc(utc_LocalDate As Date) As Date
     On Error GoTo utc_ErrorHandling
-    
+
 #If Mac Then
     ConvertToUtc = utc_ConvertDate(utc_LocalDate, utc_ConvertToUtc:=True)
 #Else
     Dim utc_TimeZoneInfo As utc_TIME_ZONE_INFORMATION
     Dim utc_UtcDate As utc_SYSTEMTIME
-    
+
     utc_GetTimeZoneInformation utc_TimeZoneInfo
     utc_TzSpecificLocalTimeToSystemTime utc_TimeZoneInfo, utc_DateToSystemTime(utc_LocalDate), utc_UtcDate
-    
+
     ConvertToUtc = utc_SystemTimeToDate(utc_UtcDate)
 #End If
-    
+
     Exit Function
-    
+
 utc_ErrorHandling:
     Err.Raise 10012, "UtcConverter.ConvertToUtc", "UTC conversion error: " & Err.Number & " - " & Err.Description
 End Function
@@ -970,7 +966,7 @@ End Function
 ''
 Public Function ParseIso(utc_IsoString As String) As Date
     On Error GoTo utc_ErrorHandling
-    
+
     Dim utc_Parts() As String
     Dim utc_DateParts() As String
     Dim utc_TimeParts() As String
@@ -979,11 +975,11 @@ Public Function ParseIso(utc_IsoString As String) As Date
     Dim utc_NegativeOffset As Boolean
     Dim utc_OffsetParts() As String
     Dim utc_Offset As Date
-    
+
     utc_Parts = VBA.Split(utc_IsoString, "T")
     utc_DateParts = VBA.Split(utc_Parts(0), "-")
     ParseIso = VBA.DateSerial(VBA.CInt(utc_DateParts(0)), VBA.CInt(utc_DateParts(1)), VBA.CInt(utc_DateParts(2)))
-    
+
     If UBound(utc_Parts) > 0 Then
         If VBA.InStr(utc_Parts(1), "Z") Then
             utc_TimeParts = VBA.Split(VBA.Replace(utc_Parts(1), "Z", ""), ":")
@@ -993,12 +989,12 @@ Public Function ParseIso(utc_IsoString As String) As Date
                 utc_NegativeOffset = True
                 utc_OffsetIndex = VBA.InStr(1, utc_Parts(1), "-")
             End If
-            
+
             If utc_OffsetIndex > 0 Then
                 utc_HasOffset = True
                 utc_TimeParts = VBA.Split(VBA.Left$(utc_Parts(1), utc_OffsetIndex - 1), ":")
                 utc_OffsetParts = VBA.Split(VBA.Right$(utc_Parts(1), Len(utc_Parts(1)) - utc_OffsetIndex), ":")
-                
+
                 Select Case UBound(utc_OffsetParts)
                 Case 0
                     utc_Offset = TimeSerial(VBA.CInt(utc_OffsetParts(0)), 0, 0)
@@ -1008,13 +1004,13 @@ Public Function ParseIso(utc_IsoString As String) As Date
                     ' VBA.Val does not use regional settings, use for seconds to avoid decimal/comma issues
                     utc_Offset = TimeSerial(VBA.CInt(utc_OffsetParts(0)), VBA.CInt(utc_OffsetParts(1)), Int(VBA.Val(utc_OffsetParts(2))))
                 End Select
-                
+
                 If utc_NegativeOffset Then: utc_Offset = -utc_Offset
             Else
                 utc_TimeParts = VBA.Split(utc_Parts(1), ":")
             End If
         End If
-        
+
         Select Case UBound(utc_TimeParts)
         Case 0
             ParseIso = ParseIso + VBA.TimeSerial(VBA.CInt(utc_TimeParts(0)), 0, 0)
@@ -1031,9 +1027,9 @@ Public Function ParseIso(utc_IsoString As String) As Date
             ParseIso = ParseIso + utc_Offset
         End If
     End If
-    
+
     Exit Function
-    
+
 utc_ErrorHandling:
     Err.Raise 10013, "UtcConverter.ParseIso", "ISO 8601 parsing error for " & utc_IsoString & ": " & Err.Number & " - " & Err.Description
 End Function
@@ -1048,11 +1044,11 @@ End Function
 ''
 Public Function ConvertToIso(utc_LocalDate As Date) As String
     On Error GoTo utc_ErrorHandling
-    
+
     ConvertToIso = VBA.Format$(ConvertToUtc(utc_LocalDate), "yyyy-mm-ddTHH:mm:ss.000Z")
-    
+
     Exit Function
-    
+
 utc_ErrorHandling:
     Err.Raise 10014, "UtcConverter.ConvertToIso", "ISO 8601 conversion error: " & Err.Number & " - " & Err.Description
 End Function
@@ -1069,7 +1065,7 @@ Private Function utc_ConvertDate(utc_Value As Date, Optional utc_ConvertToUtc As
     Dim utc_Parts() As String
     Dim utc_DateParts() As String
     Dim utc_TimeParts() As String
-    
+
     If utc_ConvertToUtc Then
         utc_ShellCommand = "date -ur `date -jf '%Y-%m-%d %H:%M:%S' " & _
             "'" & VBA.Format$(utc_Value, "yyyy-mm-dd HH:mm:ss") & "' " & _
@@ -1079,16 +1075,16 @@ Private Function utc_ConvertDate(utc_Value As Date, Optional utc_ConvertToUtc As
             "'" & VBA.Format$(utc_Value, "yyyy-mm-dd HH:mm:ss") & " +0000' " & _
             "+'%Y-%m-%d %H:%M:%S'"
     End If
-    
+
     utc_Result = utc_ExecuteInShell(utc_ShellCommand)
-    
+
     If utc_Result.utc_Output = "" Then
         Err.Raise 10015, "UtcConverter.utc_ConvertDate", "'date' command failed"
     Else
         utc_Parts = Split(utc_Result.utc_Output, " ")
         utc_DateParts = Split(utc_Parts(0), "-")
         utc_TimeParts = Split(utc_Parts(1), ":")
-        
+
         utc_ConvertDate = DateSerial(utc_DateParts(0), utc_DateParts(1), utc_DateParts(2)) + _
             TimeSerial(utc_TimeParts(0), utc_TimeParts(1), utc_TimeParts(2))
     End If
@@ -1098,12 +1094,12 @@ Private Function utc_ExecuteInShell(utc_ShellCommand As String) As utc_ShellResu
     Dim utc_File As Long
     Dim utc_Chunk As String
     Dim utc_Read As Long
-    
+
     On Error GoTo utc_ErrorHandling
     utc_File = utc_popen(utc_ShellCommand, "r")
-    
+
     If utc_File = 0 Then: Exit Function
-    
+
     Do While utc_feof(utc_File) = 0
         utc_Chunk = VBA.Space$(50)
         utc_Read = utc_fread(utc_Chunk, 1, Len(utc_Chunk) - 1, utc_File)
