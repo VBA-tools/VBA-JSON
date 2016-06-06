@@ -21,7 +21,22 @@ Set Json = JsonConverter.ParseJson("{""a"":123,""b"":[1,2,3,4],""c"":{""d"":456}
 Json("c")("e") = 789
 
 Debug.Print JsonConverter.ConvertToJson(Json)
-' -> "{""a"":123,""b"":[1,2,3,4],""c"":{""d"":456,""e"":789}}"
+' -> "{"a":123,"b":[1,2,3,4],"c":{"d":456,"e":789}}"
+
+Debug.Print JsonConverter.ConvertToJson(Json, Whitespace:=2)
+' -> "{
+'       "a": 123,
+'       "b": [
+'         1,
+'         2,
+'         3,
+'         4
+'       ],
+'       "c": {
+'         "d": 456,
+'         "e": 789  
+'       }
+'     }"
 ```
 
 ```vb
