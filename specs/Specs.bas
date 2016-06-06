@@ -218,11 +218,12 @@ Public Function Specs() As SpecSuite
     End With
     
     With Specs.It("should convert dates to ISO 8601")
-        JsonString = JsonConverter.ConvertToJson(Array(DateValue("Jan. 2, 2003") + TimeValue("4:05:06 PM")))
+        JsonString = JsonConverter.ConvertToJson(DateSerial(2003, 1, 15) + TimeSerial(12, 5, 6))
         
-        ' Don't test hour/minute due to UTC offset
-        .Expect(JsonString).ToMatch "[""2003-01-02T"
-        .Expect(JsonString).ToMatch ":06.000Z""]"
+        ' Due to UTC conversion, test shape and year, month, and seconds
+        .Expect(JsonString).ToMatch "2003-01-"
+        .Expect(JsonString).ToMatch "T"
+        .Expect(JsonString).ToMatch ":06.000Z"
     End With
     
     With Specs.It("should convert 2D arrays")
