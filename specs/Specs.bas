@@ -286,10 +286,11 @@ Public Function Specs() As SpecSuite
         JsonObject.Add NothingObject
         JsonObject.Add Empty
         JsonObject.Add Nothing
+        JsonObject.Add ""
         JsonObject.Add "z"
     
         JsonString = JsonConverter.ConvertToJson(JsonObject)
-        .Expect(JsonString).ToEqual "[""a"",null,null,null,null,""z""]"
+        .Expect(JsonString).ToEqual "[""a"",null,null,null,null,"""",""z""]"
     End With
     
     With Specs.It("should handle Empty and Nothing in objects as undefined")
@@ -299,10 +300,11 @@ Public Function Specs() As SpecSuite
         JsonObject.Add "c", NothingObject
         JsonObject.Add "d", Empty
         JsonObject.Add "e", Nothing
+        JsonObject.Add "f", ""
         JsonObject.Add "z", "z"
         
         JsonString = JsonConverter.ConvertToJson(JsonObject)
-        .Expect(JsonString).ToEqual "{""a"":""a"",""z"":""z""}"
+        .Expect(JsonString).ToEqual "{""a"":""a"",""f"":"""",""z"":""z""}"
     End With
     
     With Specs.It("should use whitespace number/string")

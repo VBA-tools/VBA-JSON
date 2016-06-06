@@ -43,6 +43,7 @@ Attribute VB_Name = "JsonConverter"
 ' (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ' SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ '
+Option Explicit
 
 ' === VBA-UTC Headers
 #If Mac Then
@@ -649,7 +650,7 @@ Private Function json_IsUndefined(ByVal json_Value As Variant) As Boolean
     Case VBA.vbEmpty
         json_IsUndefined = True
     Case VBA.vbObject
-        Select Case VBA.TypeName(JsonValue)
+        Select Case VBA.TypeName(json_Value)
         Case "Empty", "Nothing"
             json_IsUndefined = True
         End Select
