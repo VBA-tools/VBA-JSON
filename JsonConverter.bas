@@ -557,11 +557,21 @@ Private Function json_ParseString(json_String As String, ByRef json_Index As Lon
                 json_BufferAppend json_buffer, vbFormFeed, json_BufferPosition, json_BufferLength
                 json_Index = json_Index + 1
             Case "n"
-                json_BufferAppend json_buffer, vbCrLf, json_BufferPosition, json_BufferLength
-                json_Index = json_Index + 1
+                If VBA.Mid$(json_String, json_Index+1, 2) == "\r" Then
+                    json_BufferAppend json_buffer, vbCrLf, json_BufferPosition, json_BufferLength
+                    json_Index = json_Index + 3
+                Else
+                    json_BufferAppend json_buffer, vbLf, json_BufferPosition, json_BufferLength
+                    json_Index = json_Index + 1
+                End If
             Case "r"
-                json_BufferAppend json_buffer, vbCr, json_BufferPosition, json_BufferLength
-                json_Index = json_Index + 1
+                If VBA.Mid$(json_String, json_Index+1, 2) == "\n" Then
+                    json_BufferAppend json_buffer, vbCrLf, json_BufferPosition, json_BufferLength
+                    json_Index = json_Index + 3
+                Else
+                    json_BufferAppend json_buffer, vbCr, json_BufferPosition, json_BufferLength
+                    json_Index = json_Index + 1
+                End If
             Case "t"
                 json_BufferAppend json_buffer, vbTab, json_BufferPosition, json_BufferLength
                 json_Index = json_Index + 1
