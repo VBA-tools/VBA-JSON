@@ -101,6 +101,17 @@ Public Sub TestImportYahooUvxy()
     
 End Sub
 
+Public Sub ToolTestImportBlsGovJsonFile()
+ Dim strUrl As String
+    'this can be a list to loop through on an import/cover sheet that lists all json files to import.
+    'Public requests are limited to 25 daily
+    'register at https://data.bls.gov/registrationEngine/ to increase limit to 500 requests/day
+    'Series are formating is shown here:https://www.bls.gov/help/hlpforma.htm#
+    strUrl = "https://api.bls.gov/publicAPI/v1/timeseries/data/CEU0800000003" 'LEU0254555900'LIUR0000SL00019
+    ImportJsonFileDailyToWorksheet strUrl, "series"
+    
+  
+End Sub
 
 Public Sub BrokenExampleWriteJsonFileToWorksheet(strJsonFilePath As String, Optional strSheetName As String)
 ' Advanced example: Read .json file and load into sheet (Windows-only) still working on this...
