@@ -127,14 +127,14 @@ Private Sub mImportVbComponent(strFolderSource)
     End If
 End Sub
 
-Private Function mGetFileExtension(strFileName)
-    mGetFileExtension = Right(strFileName, Len(strFileName) - InStrRev(strFileName, "."))
+Private Function mGetFileExtension(strFilename)
+    mGetFileExtension = Right(strFilename, Len(strFilename) - InStrRev(strFilename, "."))
 End Function
 
-Private Function VbComponentExits(strFileName As String) As Boolean
+Private Function VbComponentExits(strFilename As String) As Boolean
     On Error Resume Next
     Dim strVBCName As String
-    strVBCName = Application.VBE.ActiveVBProject.VBComponents(Left(strFileName, InStrRev(strFileName, ".") - 1)).Name
+    strVBCName = Application.VBE.ActiveVBProject.VBComponents(Left(strFilename, InStrRev(strFilename, ".") - 1)).Name
     VbComponentExits = Err.Number = 0
 End Function
 

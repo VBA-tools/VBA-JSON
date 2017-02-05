@@ -113,14 +113,13 @@ Public Function SheetExists(strSheetName As String) As Boolean
 Dim sht As Object
 Dim fFoundSheet As Boolean
 fFoundSheet = False
-    For Each sht In ThisWorkbook.Sheets
-        If LCase(sht.Name) = LCase(strSheetName) Then
-            fFoundSheet = True
-            Exit For
-        End If
-    Next
+     For Each sht In ThisWorkbook.Sheets
+         If LCase(sht.Name) = LCase(strSheetName) Then
+             fFoundSheet = True
+             Exit For
+         End If
+     Next
     SheetExists = fFoundSheet
-    
 End Function
 
 Public Function DeleteSheet(strSheetName As String) As Boolean 'Returns True if succeeds or sheet never existed

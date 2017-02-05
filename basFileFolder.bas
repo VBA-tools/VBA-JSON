@@ -26,13 +26,31 @@ Private Declare Function URLDownloadToFileA Lib "urlmon" (ByVal pCaller As Long,
     ByVal lpfnCB As Long) _
 As Long
 
+Public Function RemoveForbiddenFilenameCharacters(strFilename As String) As String
+'https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx
+'< (less than)
+'> (greater than)
+': (colon)
+'" (double quote)
+'/ (forward slash)
+'\ (backslash)
+'| (vertical bar or pipe)
+'? (question mark)
+'* (asterisk)
+Dim strForbidden As Variant
+    For Each strForbidden In Array("/", "\", "|", ":", "*", "?", "<", ">", """")
+        strFilename = Replace(strFilename, strForbidden, "_")
+    Next
+    RemoveForbiddenFilenameCharacters = strFilename
+End Function
+
 Public Function DownloadUrlFileToTemp( _
     ByVal strUrl As String, _
     Optional ByVal strDestinationExtension As String = "txt") _
 As String
     Dim lngRetVal As Long
     Dim strTempFilePath As String
-    strTempFilePath = Right(strUrl, Len(strUrl) - InStrRev(strUrl, "/"))
+    strTempFilePath = Left(RemoveForbiddenFilenameCharacters(Right(strUrl, Len(strUrl) - InStrRev(strUrl, "/"))), 30)
     strTempFilePath = (Environ$("TEMP") & "\" & strTempFilePath & Format(Now(), "yymmdd") & Timer) & "." & strDestinationExtension
     lngRetVal = URLDownloadToFileA(0, strUrl, strTempFilePath, 0, 0)
     If lngRetVal Then

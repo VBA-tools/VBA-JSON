@@ -82,7 +82,7 @@ Sub JsonTest()
 End Sub
 
 'Gerdes, Jeremy
-Public Sub TestImportYahooUvxy()
+Public Sub ToolTestImportYahooUvxy()
 'YAHOO api usage limitations: http://meumobi.github.io/stocks%20apis/2016/03/13/get-realtime-stock-quotes-yahoo-finance-api.html
 'Free Yahooo API public limit is 20,000 queries per hour per IP, not to exceed 48,000 per day
 'Alternate data sources: https://www.programmableweb.com/news/96-stocks-apis-bloomberg-nasdaq-and-etrade/2013/05/22
