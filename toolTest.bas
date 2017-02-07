@@ -1,7 +1,13 @@
 Attribute VB_Name = "toolTest"
 Option Explicit
-Public Sub ToolTestImportBlsGovJsonFile(Optional fForceTooManyCallsError As Boolean = False)
+
+Public Sub ToolTestImportBlsGovJsonFile( _
+    Optional strFileTargetDirectory As String, _
+    Optional strArchiveDirectory As String, _
+    Optional fForceTooManyCallsError As Boolean = False)
 Dim strUrl As String
+    'Usage:ToolTestImportBlsGovJsonFile "SolutionFiles", "JSON Archive"
+    
     'this can be a list to loop through on an import/cover sheet that lists all json files to import.
     'Public requests to v1API are limited to 25 daily
     'From testing a single query called over and over again may not count toward this limit,
@@ -10,12 +16,13 @@ Dim strUrl As String
     'Series are formating is shown here:https://www.bls.gov/help/hlpforma.htm#
     Dim dblStartTime As Double
     dblStartTime = Timer
-    strUrl = "https://api.bls.gov/publicAPI/v1/timeseries/data/CEU0800000003" 'LEU0254555900'LIUR0000SL00019
-    ImportJsonFileDailyToWorksheet strUrl, "series"
+    strUrl = "https://api.bls.gov/publicAPI/v1/timeseries/data/LIUR0000SL00019" 'LEU0254555900'LIUR0000SL00019
+    ImportJsonFileDailyToWorksheet strUrl, "series", , strArchiveDirectory, strFileTargetDirectory
     If fForceTooManyCallsError Then
         Dim i As Integer
-        For i = 1 To 5000
-            ImportJsonFileDailyToWorksheet strUrl, "series"
+        For i = 1 To 100
+            ImportJsonFileDailyToWorksheet strUrl, "series", , strArchiveDirectory, strFileTargetDirectory
+            
         Next i
     End If
     Debug.Print "Completed in: " & Timer - dblStartTime & "Seconds"

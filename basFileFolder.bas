@@ -46,12 +46,19 @@ End Function
 
 Public Function DownloadUrlFileToTemp( _
     ByVal strUrl As String, _
-    Optional ByVal strDestinationExtension As String = "txt") _
+    Optional ByVal strDestinationExtension As String = "txt", _
+    Optional strJsonArchiveDirectory As String) _
 As String
     Dim lngRetVal As Long
     Dim strTempFilePath As String
+    Dim strTargetDirectory As String
     strTempFilePath = Left(RemoveForbiddenFilenameCharacters(Right(strUrl, Len(strUrl) - InStrRev(strUrl, "/"))), 30)
-    strTempFilePath = (Environ$("TEMP") & "\" & strTempFilePath & Format(Now(), "yymmdd") & Timer) & "." & strDestinationExtension
+    If Len(strJsonArchiveDirectory) > 0 Then 'should be validating that the dir exists and we can write to it.
+        strTargetDirectory = GetRelativePathViaParent(strJsonArchiveDirectory)
+    Else
+        strTargetDirectory = Environ$("TEMP")
+    End If
+    strTempFilePath = strTargetDirectory & "\" & strTempFilePath & Format(Now(), "yymmddhhss") & Right(Timer, 2) & "." & strDestinationExtension
     lngRetVal = URLDownloadToFileA(0, strUrl, strTempFilePath, 0, 0)
     If lngRetVal Then
         Err.Raise Err.LastDllError, , "Download failed."
@@ -114,37 +121,44 @@ Public Function GetRelativePathViaParentAlternateRoot(ByVal strRootPath As Strin
     intParentCount = -1
 End Function
 
-Public Function GetRelativePathViaParent(Optional ByVal strPath)
+Public Function GetRelativePathViaParent(Optional ByVal strPath As String)
 'Usage for up 2 dirs is GetRelativePathViaParent("..\..\Destination")
-    Dim strCurrentPath As String, strVal As String
-    Dim oThisApplication As Object:    Set oThisApplication = Application
-    Select Case True
-        Case InStrRev(oThisApplication.Name, "Excel") > 0
-            strCurrentPath = oThisApplication.ThisWorkbook.Path
-        Case InStrRev(oThisApplication.Name, "Access") > 0
-            strCurrentPath = oThisApplication.CurrentProject.Path
-    End Select
-    Dim fIsServerPath As Boolean: fIsServerPath = False
-    If Left(strCurrentPath, 2) = "\\" Then
-        strCurrentPath = Right(strCurrentPath, Len(strCurrentPath) - 2)
-        fIsServerPath = True
+    Dim strVal As String
+    If Left(strPath, 2) = "\\" Or Mid(strPath, 2, 1) = ":" Then
+        strVal = strPath
+    Else
+        Dim strCurrentPath As String
+        Dim oThisApplication As Object:    Set oThisApplication = Application
+        Select Case True
+            Case InStrRev(oThisApplication.Name, "Excel") > 0
+                strCurrentPath = oThisApplication.ThisWorkbook.Path
+            Case InStrRev(oThisApplication.Name, "Access") > 0
+                strCurrentPath = oThisApplication.CurrentProject.Path
+        End Select
+        Dim fIsServerPath As Boolean: fIsServerPath = False
+         If Left(strCurrentPath, 2) = "\\" Then
+             strCurrentPath = Right(strCurrentPath, Len(strCurrentPath) - 2)
+             fIsServerPath = True
+        End If
+        Dim aryCurrentFolder As Variant
+        aryCurrentFolder = Split(strCurrentPath, "\")
+        Dim aryParentPath As Variant
+        aryParentPath = Split(strPath, "..\")
+        If fIsServerPath Then
+            aryCurrentFolder(0) = "\\" & aryCurrentFolder(0)
+        End If
+        Dim intDir As Integer
+        For intDir = 0 To UBound(aryCurrentFolder) - UBound(aryParentPath)
+            strVal = strVal & aryCurrentFolder(intDir) & "\"
+        Next
+        strVal = StripTrailingBackSlash(strVal)
+        If IsArrayAllocated(aryParentPath) Then
+            strVal = strVal & "\" & aryParentPath(UBound(aryParentPath))
+        End If
     End If
-    Dim aryCurrentFolder As Variant
-    aryCurrentFolder = Split(strCurrentPath, "\")
-    Dim aryParentPath As Variant
-    aryParentPath = Split(strPath, "..\")
-    If fIsServerPath Then
-        aryCurrentFolder(0) = "\\" & aryCurrentFolder(0)
+    If BuildDir(strVal) Then
+        GetRelativePathViaParent = strVal
     End If
-    Dim intDir As Integer
-    For intDir = 0 To UBound(aryCurrentFolder) - UBound(aryParentPath) - 1
-        strVal = strVal & aryCurrentFolder(intDir) & "\"
-    Next
-    strVal = StripTrailingBackSlash(strVal)
-    If IsArrayAllocated(aryParentPath) Then
-        strVal = strVal & "\" & aryParentPath(UBound(aryParentPath))
-    End If
-    GetRelativePathViaParent = strVal
 End Function
 
 Public Sub SaveStringToFile(ByRef strFilePath As String, ByRef strString As String)

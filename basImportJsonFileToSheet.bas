@@ -22,7 +22,9 @@ Private mlngCurrentDupSheetCount As Long
 Public Sub ImportJsonFileDailyToWorksheet( _
     ByRef strUrl As String, _
     ByRef strJSONObjectNameWithData As String, _
-    Optional ByRef strDesinationFileName As String _
+    Optional ByRef strDesinationFileName As String, _
+    Optional ByRef strJsonArchiveDirectory As String, _
+    Optional ByRef strSolutionFileArchiveDirectory As String _
 )
 On Error GoTo ExitHere
 'Use when the data posted to the web is only updated daily, we check to see if we have data for that day and only proceed after asking
@@ -35,16 +37,21 @@ Dim strDesinationWorkbookFileName As String
     End If
     strDesinationWorkbookFileName = RemoveForbiddenFilenameCharacters(strDesinationWorkbookFileName)
     Dim strTempDownloadFile As String
-    strTempDownloadFile = DownloadUrlFileToTemp(strUrl, "json")
+    strTempDownloadFile = DownloadUrlFileToTemp(strUrl, "json", strJsonArchiveDirectory)
     mStrRawData = vbNullString
     mlngCurrentDupSheetCount = 1
-    ExpandJsonToNewWorkbook strTempDownloadFile, strJSONObjectNameWithData, strDesinationWorkbookFileName
+    ExpandJsonToNewWorkbook strTempDownloadFile, strJSONObjectNameWithData, strDesinationWorkbookFileName, strSolutionFileArchiveDirectory
 ExitHere:
     Application.ScreenUpdating = True
     'Delete our temp JSON file if we are done with it
 End Sub
 
-Sub ExpandJsonToNewWorkbook(strJsonFilePath As String, strJSONObjectNameWithData As String, Optional strDesinationWorkbookFileName As String)
+Sub ExpandJsonToNewWorkbook( _
+    strJsonFilePath As String, _
+    strJSONObjectNameWithData As String, _
+    Optional strDesinationWorkbookFileName As String, _
+    Optional strSolutionDestinationDirectory _
+)
 Dim fso As Object: Set fso = CreateObject("Scripting.FileSystemObject") 'New FileSystemObject
 Dim JsonTS As Object ' TextStream
 Dim JsonText As String
@@ -60,7 +67,6 @@ Dim Parsed As Dictionary
     JsonTS.Close
     Set JsonTS = Nothing
     Set fso = Nothing
-    
     Dim jsonData As Dictionary
     Set jsonData = ParseJson(JsonText)
     Dim wkb As Workbook
@@ -68,14 +74,22 @@ Dim Parsed As Dictionary
     Dim wsh As Worksheet
     Set wsh = wkb.Sheets(1)
     wsh.Name = "JSON_Object"
+    '----------------------------------------------
     GetAllJsonObjectNestedValues jsonData, wkb, wsh
+    '----------------------------------------------
+    'Cleanup
     For Each wsh In wkb.Sheets
         If wsh.UsedRange.Cells.Count = 1 Then
             wsh.Activate
             DeleteSheet wsh.Name, wkb
         End If
     Next
-    wkb.SaveAs ThisWorkbook.Path & "\" & strDesinationWorkbookFileName, XlFileFormat.xlExcel8
+    If Len(strSolutionDestinationDirectory) = 0 Then 'and folder exists and we ca write to it...
+        strSolutionDestinationDirectory = ThisWorkbook.Path
+    Else
+        strSolutionDestinationDirectory = GetRelativePathViaParent(strSolutionDestinationDirectory)
+    End If
+    wkb.SaveAs strSolutionDestinationDirectory & "\" & strDesinationWorkbookFileName, XlFileFormat.xlExcel8
 End Sub
 
 Private Function GetAllJsonObjectNestedValues( _
@@ -105,7 +119,7 @@ If dict.Count > 0 Then
             Dim varItem As Variant
             'Dim sheetName As String
             varKey = dict.Keys()(lngItem)
-            strKeyName = CStr(strKeyName)
+            strKeyName = CStr(varKey)
             If IsObject(dict.Items()(lngItem)) Then
                 Dim wshNew As Worksheet
                 Dim sheetName As String
