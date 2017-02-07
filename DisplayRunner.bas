@@ -252,11 +252,11 @@ Private Function NewOutputRow() As Integer
     Loop
 End Function
 
-Private Function SheetExists(SheetName As String) As Boolean
+Private Function SheetExists(sheetName As String) As Boolean
     Dim Sheet As Worksheet
     
     For Each Sheet In ThisWorkbook.Sheets
-        If Sheet.Name = SheetName Then
+        If Sheet.Name = sheetName Then
             SheetExists = True
             Exit Function
         End If

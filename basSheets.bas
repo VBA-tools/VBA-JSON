@@ -20,11 +20,15 @@ Option Explicit
 Public Function CreateWorksheet( _
     strSheetName As String, _
     Optional shtAfter As Object, _
-    Optional fDeleteExisting As Boolean = True) _
+    Optional fDeleteExisting As Boolean = True, _
+    Optional wkb As Workbook) _
 As Worksheet
+    If wkb Is Nothing Then
+        Set wkb = ThisWorkbook
+    End If
+wkb.Activate ' ensure this workbook is active prior to creating sheets
 
-ThisWorkbook.Activate ' ensure this workbook is active prior to creating sheets
-Dim wkshts As Sheets: Set wkshts = ThisWorkbook.Sheets
+Dim wkshts As Sheets: Set wkshts = wkb.Sheets
 Dim sht As Worksheet
     
     If SheetExists(strSheetName) Then
@@ -109,11 +113,14 @@ Dim cht As Chart
 
 End Function
 
-Public Function SheetExists(strSheetName As String) As Boolean
+Public Function SheetExists(strSheetName As String, Optional wkb As Workbook) As Boolean
+If wkb Is Nothing Then
+    Set wkb = ThisWorkbook
+End If
 Dim sht As Object
 Dim fFoundSheet As Boolean
 fFoundSheet = False
-     For Each sht In ThisWorkbook.Sheets
+     For Each sht In wkb.Sheets
          If LCase(sht.Name) = LCase(strSheetName) Then
              fFoundSheet = True
              Exit For
@@ -122,12 +129,16 @@ fFoundSheet = False
     SheetExists = fFoundSheet
 End Function
 
-Public Function DeleteSheet(strSheetName As String) As Boolean 'Returns True if succeeds or sheet never existed
+Public Function DeleteSheet(strSheetName As String, Optional wkb As Workbook) As Boolean 'Returns True if succeeds or sheet never existed
 On Error Resume Next
+If wkb Is Nothing Then
+    Set wkb = ThisWorkbook
+End If
 Dim sht As Object ' any Sheet Type
-    If SheetExists(strSheetName) Then
-        
-        ThisWorkbook.Sheets(strSheetName).Delete
+    If SheetExists(strSheetName, wkb) Then
+        Application.DisplayAlerts = False
+        wkb.Sheets(strSheetName).Delete
+        Application.DisplayAlerts = True
     End If
     DeleteSheet = Err.Number = 0
 End Function

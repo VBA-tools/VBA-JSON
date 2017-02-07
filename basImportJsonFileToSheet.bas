@@ -16,51 +16,35 @@ Option Explicit
          'officer or employee of the United States Government as part of that
          'person’s official duties.
          '...
+Private mStrRawData As String
+Private mlngCurrentDupSheetCount As Long
 
 Public Sub ImportJsonFileDailyToWorksheet( _
     ByRef strUrl As String, _
     ByRef strJSONObjectNameWithData As String, _
-    Optional ByRef strDestinationSheetName As String _
+    Optional ByRef strDesinationFileName As String _
 )
+On Error GoTo ExitHere
 'Use when the data posted to the web is only updated daily, we check to see if we have data for that day and only proceed after asking
-Dim strSheetName As String
-    If Len(strDestinationSheetName) > 0 Then
-        strSheetName = strDestinationSheetName
+Application.ScreenUpdating = False
+Dim strDesinationWorkbookFileName As String
+    If Len(strDesinationFileName) > 0 Then
+        strDesinationWorkbookFileName = strDesinationFileName
     Else
-        strSheetName = strURLDecode(Left(Right(strUrl, Len(strUrl) - InStrRev(strUrl, "/")), 30 - 6) & Format(Now(), "yymmdd"))
+        strDesinationWorkbookFileName = strURLDecode(Left(Right(strUrl, Len(strUrl) - InStrRev(strUrl, "/")), 50 - 6) & Format(Now(), "yymmdd"))
     End If
-    strSheetName = RemoveForbiddenFilenameCharacters(strSheetName)
-    If SheetExists(strSheetName) Then
-        If ThisWorkbook.Sheets(strSheetName).UsedRange.Cells.Count > 2 Then
-            If MsgBox("The site:" & strUrl & vbCrLf & vbCrLf & "Appears to have allready been imported into this workbook today, do you what to reperform this import?", vbYesNo) = vbYes Then
-                DeleteSheet strSheetName
-            Else
-                GoTo ExitHere
-            End If
-        Else 'import sheet is empty... so delete and resume
-            DeleteSheet strSheetName
-        End If
-    End If
+    strDesinationWorkbookFileName = RemoveForbiddenFilenameCharacters(strDesinationWorkbookFileName)
     Dim strTempDownloadFile As String
     strTempDownloadFile = DownloadUrlFileToTemp(strUrl, "json")
-    'Worksheet name length limit is 30 characters (-6 for date in yymmdd)
-    #If DEBUGENABLED Then
-        'Prints results to the imediate window, not structured.
-        'First Working Example
-        ' ExampleWriteJsonFileToDebugPrintImediateWindow strTempDownloadFile, strSheetName
-        
-        'Setting up generic debug print values JSON file interpreter
-        WriteJsonFileToTheImediateWindow strTempDownloadFile, strJSONObjectNameWithData, strSheetName
-    #End If
-    
-    'Delete our temp JSON file if we are done with it
-    
+    mStrRawData = vbNullString
+    mlngCurrentDupSheetCount = 1
+    ExpandJsonToNewWorkbook strTempDownloadFile, strJSONObjectNameWithData, strDesinationWorkbookFileName
 ExitHere:
+    Application.ScreenUpdating = True
+    'Delete our temp JSON file if we are done with it
 End Sub
 
-
-
-Sub ExampleWriteJsonFileToDebugPrintImediateWindow(strJsonFilePath As String, Optional strSheetName As String)
+Sub ExpandJsonToNewWorkbook(strJsonFilePath As String, strJSONObjectNameWithData As String, Optional strDesinationWorkbookFileName As String)
 Dim fso As Object: Set fso = CreateObject("Scripting.FileSystemObject") 'New FileSystemObject
 Dim JsonTS As Object ' TextStream
 Dim JsonText As String
@@ -79,119 +63,112 @@ Dim Parsed As Dictionary
     
     Dim jsonData As Dictionary
     Set jsonData = ParseJson(JsonText)
-    Dim optionChain As Dictionary 'or collection
-    Set optionChain = jsonData("optionChain")
-    Dim optionChainResults As Collection
-    Set optionChainResults = optionChain("result")
-    Dim optionChainResult
-    For Each optionChainResult In optionChainResults
-        Dim underlyingSymbol As String
-        underlyingSymbol = optionChainResult("underlyingSymbol")
-        '
-        Dim expirationDates As Collection
-        Set expirationDates = optionChainResult("expirationDates")
-        Dim expirationDate As Variant
-        For Each expirationDate In expirationDates
-            Debug.Print underlyingSymbol & ":ExpirationDate=" & expirationDate
-        Next
-        '
-        Dim strikes As Collection
-        Dim strike As Variant
-        Set strikes = optionChainResult("strikes")
-        For Each strike In strikes
-            Debug.Print underlyingSymbol & ":strike=" & strike
-        Next
-        '
-        Dim hasMiniOptions As Boolean
-        hasMiniOptions = optionChainResult("hasMiniOptions")
-        Debug.Print underlyingSymbol & ":hasMiniOptions=" & hasMiniOptions
-        '
-        Dim quotes As Dictionary
-        Set quotes = optionChainResult("quote")
-        Dim aryQuotesPair As Variant
-        aryQuotesPair = GetAllJsonObjectNestedValues(quotes)
-        '
-        Dim options As Collection
-        Set options = optionChainResult("options")
-        Dim optionItem As Variant
-        For Each optionItem In options
-            Dim optionDictionary As Dictionary
-            Set optionDictionary = optionItem
-            Dim aryOptionPair As Variant
-            aryOptionPair = GetAllJsonObjectNestedValues(optionDictionary)
-        Next optionItem
-    Next optionChainResult
-End Sub
-
-Sub WriteJsonFileToTheImediateWindow(strJsonFilePath As String, strJSONObjectNameWithData As String, Optional strSheetName As String)
-Dim fso As Object: Set fso = CreateObject("Scripting.FileSystemObject") 'New FileSystemObject
-Dim JsonTS As Object ' TextStream
-Dim JsonText As String
-Dim Parsed As Dictionary
-
-    ' Read .json file
-    Set JsonTS = fso.OpenTextFile(strJsonFilePath, ForReading)
-    If JsonTS.AtEndOfStream Then
-        JsonText = vbNullString
-    Else
-        JsonText = JsonTS.ReadAll
-    End If
-    JsonTS.Close
-    Set JsonTS = Nothing
-    Set fso = Nothing
-    
-    Dim jsonData As Dictionary
-    Set jsonData = ParseJson(JsonText)
-    GetAllJsonObjectNestedValues jsonData
-End Sub
-
-
-Private Function GetAllJsonObjectNestedValues(ByRef dict As Dictionary) As Variant
-If dict.Count > 0 Then
-Dim aryTemp As Variant
-ReDim aryTemp(0 To 1, 0 To dict.Count - 1) '2 columns, with n rows
-Dim lngItem As LongPtr
-    For lngItem = 0 To dict.Count - 1
-        Dim varKey
-        Dim varItem
-        varKey = dict.Keys()(lngItem)
-        If IsObject(dict.Items()(lngItem)) Then
-            Dim tmpDictionary As Dictionary
-            Dim aryRecursive As Variant
-            If TypeName(dict.Items()(lngItem)) = "Dictionary" Then
-                Dim objItemDictionary As Dictionary
-                Set objItemDictionary = dict.Items()(lngItem)
-                aryRecursive = GetAllJsonObjectNestedValues(objItemDictionary)
-            Else
-                Dim objItem As Collection
-                Set objItem = dict.Items()(lngItem)
-                Select Case TypeName(objItem)
-                    Case "Collection"
-                        Dim objItemElement As Variant
-                        For Each objItemElement In objItem
-                            If TypeName(objItemElement) = "Dictionary" Then
-                                Set tmpDictionary = objItemElement
-                                aryRecursive = GetAllJsonObjectNestedValues(tmpDictionary)
-                            Else
-                                Debug.Print objItemElement
-                            End If
-                        Next objItemElement
-                    Case "Dictionary"
-                        Set tmpDictionary = objItem
-                        aryRecursive = GetAllJsonObjectNestedValues(objItem) 'Executing this debug prints for testing untill we decide how to export this data to a spreedsheet appropriately
-                End Select
-            End If
-            varItem = "Object"
-        Else
-            varItem = dict.Items()(lngItem)
+    Dim wkb As Workbook
+    Set wkb = Application.Workbooks.Add()
+    Dim wsh As Worksheet
+    Set wsh = wkb.Sheets(1)
+    wsh.Name = "JSON_Object"
+    GetAllJsonObjectNestedValues jsonData, wkb, wsh
+    For Each wsh In wkb.Sheets
+        If wsh.UsedRange.Cells.Count = 1 Then
+            wsh.Activate
+            DeleteSheet wsh.Name, wkb
         End If
-        aryTemp(0, lngItem) = varKey
-        aryTemp(1, lngItem) = varItem
-        Debug.Print aryTemp(0, lngItem), aryTemp(1, lngItem)
-    Next lngItem
-End If
+    Next
+    wkb.SaveAs ThisWorkbook.Path & "\" & strDesinationWorkbookFileName, XlFileFormat.xlExcel8
+End Sub
+
+Private Function GetAllJsonObjectNestedValues( _
+            ByRef dict As Dictionary, _
+            ByRef wkb As Workbook, _
+            ByRef wsh As Worksheet, _
+            Optional strPreviousObjectKey As String) _
+As Variant
+'This method is overly optimistic that each object will hold data, we will create a sheet even for empty objects, if a
+'sheet is found to have no data we delete it, a possibly faster/less memory intensive way would be to run through the json file
+'once to determine what objects hold no data first, and ignore them
+'-------------------
+'additionally there is no direct relationship displayed from the nested object to it's parent using this method, this will
+'have to be built out and incorperated to properly import into a relational database if that data is needed
+If dict.Count > 0 Then
+    Dim aryTemp As Variant
+    ReDim aryTemp(0 To 1, 0 To dict.Count - 1) '2 columns, with n rows
+    Dim lngDataRow As Variant
+    lngDataRow = 1
+    Dim lngItem As LongPtr
+    If Not wsh Is Nothing Then
+        wsh.Activate
+    End If
+        For lngItem = 0 To dict.Count - 1
+            Dim varKey As Variant
+            Dim strKeyName As String
+            Dim varItem As Variant
+            'Dim sheetName As String
+            varKey = dict.Keys()(lngItem)
+            strKeyName = CStr(strKeyName)
+            If IsObject(dict.Items()(lngItem)) Then
+                Dim wshNew As Worksheet
+                Dim sheetName As String
+                If Len(strPreviousObjectKey) = 0 Then
+                    sheetName = Left(varKey, 28)
+                Else
+                    sheetName = Left(strPreviousObjectKey & "_" & varKey, 28)
+                End If
+                If SheetExists(sheetName, wkb) Then
+                    mlngCurrentDupSheetCount = mlngCurrentDupSheetCount + 1
+                    Set wshNew = CreateWorksheet(sheetName & mlngCurrentDupSheetCount, wkb:=wkb)
+                Else
+                    Set wshNew = CreateWorksheet(sheetName, wkb:=wkb)
+                End If
+                varItem = "-------------------Object-------------------"
+                Dim tmpDictionary As Dictionary
+                Dim aryRecursive As Variant
+                If TypeName(dict.Items()(lngItem)) = "Dictionary" Then
+                    Dim objItemDictionary As Dictionary
+                    Set objItemDictionary = dict.Items()(lngItem)
+                    aryRecursive = GetAllJsonObjectNestedValues(objItemDictionary, wkb, wshNew, strKeyName)
+                Else
+                    Dim objItem As Collection
+                    Set objItem = dict.Items()(lngItem)
+                    Select Case TypeName(objItem)
+                        Case "Collection"
+                            Dim objItemElement As Variant
+                            Dim lngItemElementCounter As Long
+                            lngItemElementCounter = 0
+                            For Each objItemElement In objItem
+                                lngItemElementCounter = lngItemElementCounter + 1
+                                If TypeName(objItemElement) = "Dictionary" Then
+                                    Set tmpDictionary = objItemElement
+                                    aryRecursive = GetAllJsonObjectNestedValues(tmpDictionary, wkb, wshNew, strKeyName)
+                                Else
+                                    wsh.Activate
+                                    If lngItemElementCounter = 1 Then 'Add Column Header
+                                        wsh.Range(Cells(lngItemElementCounter, lngItem), Cells(lngItemElementCounter, lngItem)).value = varKey
+                                        wsh.Range(Cells(lngItemElementCounter + 1, lngItem), Cells(lngItemElementCounter + 1, lngItem)).value = objItemElement
+                                    Else
+                                        wsh.Range(Cells(lngItemElementCounter + 1, lngItem), Cells(lngItemElementCounter + 1, lngItem)).value = objItemElement
+                                    End If
+                                End If
+                            Next objItemElement
+                            Debug.Print lngItemElementCounter
+                        Case "Dictionary"
+                            Set tmpDictionary = objItem
+                            aryRecursive = GetAllJsonObjectNestedValues(objItem, wkb, wsh) 'Executing this debug prints for testing untill we decide how to export this data to a spreedsheet appropriately
+                    End Select
+                End If
+            Else
+                varItem = dict.Items()(lngItem)
+                wsh.Activate
+                If strKeyName = CStr(wsh.Range(Cells(1, 1), Cells(1, 1)).value) Then
+                    lngDataRow = wsh.UsedRange.Rows.Count 'Assuming the same column header value = new row in any key value pair list
+                End If
+                If lngDataRow = 1 Then
+                    wsh.Range(Cells(lngDataRow, lngItem + 1), Cells(lngDataRow, lngItem + 1)).value = varKey
+                End If
+                wsh.Range(Cells(lngDataRow + 1, lngItem + 1), Cells(lngDataRow + 1, lngItem + 1)).value = varItem
+            End If
+        Next lngItem
+    End If
 End Function
-
-
 
 

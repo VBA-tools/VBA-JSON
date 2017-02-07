@@ -147,6 +147,45 @@ Public Function GetRelativePathViaParent(Optional ByVal strPath)
     GetRelativePathViaParent = strVal
 End Function
 
+Public Sub SaveStringToFile(ByRef strFilePath As String, ByRef strString As String)
+On Error GoTo HandleError
+
+Dim intFileNumber As Long
+Dim abyteByteArray() As Byte
+
+    ' Delete existing file if needed
+    If LenB(Dir(strFilePath)) <> 0 Then _
+        Kill strFilePath
+
+    ' Get free file number
+    intFileNumber = FreeFile
+    ' Open file for binary write
+    Open strFilePath For Binary Access Write As intFileNumber
+    ' Convert string to byte array
+    ' Note: Must save string as byte array or Put function
+    ' will convert string from unicode to ANSI.
+    ' Empty string will NOT cause error.
+    abyteByteArray() = strString
+    ' Save data to file
+    ' Note: Unallocated array will NOT cause error.
+    Put intFileNumber, 1, abyteByteArray()
+    ' Close file
+    Close intFileNumber
+
+ExitHere:
+    Exit Sub
+
+HandleError:
+    ' Close file if needed
+    ' Note: Below line of code will not raise an error even if no file is open
+    Close intFileNumber
+    Select Case Err.Number
+        Case Else
+            Err.Raise Err.Number, Err.Source, Err.Description, Err.HelpFile, Err.HelpContext
+    End Select
+
+End Sub
+
 Private Function IsArrayAllocated(ByRef avarArray As Variant) As Boolean
     On Error Resume Next
     ' Normally we only need to check LBound to determine if an array has been allocated.
@@ -166,3 +205,11 @@ Public Function StripTrailingBackSlash(ByRef strPath As String)
         End If
 End Function
 
+Public Sub OpenFileWithExplorer(ByRef strFilePath As String, Optional ByRef fReadOnly As Boolean = True)
+
+    Dim wshShell
+    Set wshShell = CreateObject("WScript.Shell")
+    wshShell.Exec ("Explorer.exe " & strFilePath)
+    Set wshShell = Nothing
+
+End Sub

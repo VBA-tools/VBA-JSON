@@ -1,116 +1,24 @@
 Attribute VB_Name = "toolTest"
 Option Explicit
-'Example JSON string for example parsing
-'This example was from http://stackoverflow.com/questions/27723798/parsing-json-us-bls-in-vba-from-ms-access
-'using http://www.ediy.co.nz/vbjson-json-parser-library-in-vb6-xidc55680.htm
-'That project has a BSD lisence
-Public Const jsonSource As String = "{" & _
-  """status"": ""REQUEST_SUCCEEDED"", " & _
-  """responseTime"": 71, " & _
-  """message"": [ " & _
-  "], " & _
-  """Results"": { " & _
-    """series"": [ " & _
-      "{ " & _
-        """seriesID"": ""WPS012"", " & _
-        """data"": [ " & _
-          "{ " & _
-            """year"": ""2014"", " & _
-            """period"": ""M11"", " & _
-            """periodName"": ""November"", " & _
-            """value"": ""153.6"", " & _
-            """footnotes"": [ " & _
-              "{ " & _
-                """code"": ""P"", " & _
-                """text"": ""Preliminary. All indexes are subject to revision four months after original publication."" " & _
-              "} " & _
-            "] " & _
-          "} " & _
-        "] " & _
-      "}]}}"
-
-Sub JsonTest()
-    Dim jsonData As Dictionary
-    Set jsonData = ParseJson(jsonSource)
-
-    Dim responseTime As String
-    responseTime = jsonData("responseTime")
-
-    Dim results As Dictionary
-    Set results = jsonData("Results")
-
-    Dim series As Collection
-    Set series = results("series")
-
-    Dim seriesItem As Dictionary
-    For Each seriesItem In series
-        Dim seriesId As String
-        seriesId = seriesItem("seriesID")
-        Debug.Print seriesId
-
-        Dim data As Collection
-        Set data = seriesItem("data")
-
-        Dim dataItem As Dictionary
-        For Each dataItem In data
-            Dim year As String
-            year = dataItem("year")
-
-            Dim period As String
-            period = dataItem("period")
-
-            Dim periodName As String
-            periodName = dataItem("periodName")
-
-            Dim value As String
-            value = dataItem("value")
-
-            Dim footnotes As Collection
-            Set footnotes = dataItem("footnotes")
-
-            Dim footnotesItem As Dictionary
-            For Each footnotesItem In footnotes
-                Dim code As String
-                code = footnotesItem("code")
-
-                Dim text As String
-                text = footnotesItem("text")
-
-            Next footnotesItem
-        Next dataItem
-    Next seriesItem
-End Sub
-
-'Gerdes, Jeremy
-Public Sub ToolTestImportYahooUvxy()
-'YAHOO api usage limitations: http://meumobi.github.io/stocks%20apis/2016/03/13/get-realtime-stock-quotes-yahoo-finance-api.html
-'Free Yahooo API public limit is 20,000 queries per hour per IP, not to exceed 48,000 per day
-'Alternate data sources: https://www.programmableweb.com/news/96-stocks-apis-bloomberg-nasdaq-and-etrade/2013/05/22
-    Dim strUrl As String
+Public Sub ToolTestImportBlsGovJsonFile(Optional fForceTooManyCallsError As Boolean = False)
+Dim strUrl As String
     'this can be a list to loop through on an import/cover sheet that lists all json files to import.
-    strUrl = "https://query1.finance.yahoo.com/v7/finance/options/UVXY"
-    ImportJsonFileDailyToWorksheet strUrl, "optionChain"
-    
-    'Get quote only
-    strUrl = "https://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20yahoo.finance.quotes%20where%20symbol%20in%20(%22UVXY%22)&format=json&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys&callback="
-    ImportJsonFileDailyToWorksheet strUrl, "quote", "UVXY_Quote"
-    
-    'or any other symbol i.e.
-    strUrl = "https://query1.finance.yahoo.com/v7/finance/options/IDX"
-    ImportJsonFileDailyToWorksheet strUrl, "optionChain"
-    
-End Sub
-
-Public Sub ToolTestImportBlsGovJsonFile()
- Dim strUrl As String
-    'this can be a list to loop through on an import/cover sheet that lists all json files to import.
-    'Public requests are limited to 25 daily
-    'register at https://data.bls.gov/registrationEngine/ to increase limit to 500 requests/day
+    'Public requests to v1API are limited to 25 daily
+    'From testing a single query called over and over again may not count toward this limit,
+    'or the limits have been raised, made 6,600 sequential identical requsts (16mb total) in 10 minutes without error
+    'can register at https://data.bls.gov/registrationEngine/ to increase limit to 500 requests/day
     'Series are formating is shown here:https://www.bls.gov/help/hlpforma.htm#
+    Dim dblStartTime As Double
+    dblStartTime = Timer
     strUrl = "https://api.bls.gov/publicAPI/v1/timeseries/data/CEU0800000003" 'LEU0254555900'LIUR0000SL00019
     ImportJsonFileDailyToWorksheet strUrl, "series"
-    
-  
+    If fForceTooManyCallsError Then
+        Dim i As Integer
+        For i = 1 To 5000
+            ImportJsonFileDailyToWorksheet strUrl, "series"
+        Next i
+    End If
+    Debug.Print "Completed in: " & Timer - dblStartTime & "Seconds"
 End Sub
 
 Public Sub BrokenExampleWriteJsonFileToWorksheet(strJsonFilePath As String, Optional strSheetName As String)
@@ -159,3 +67,6 @@ Dim Parsed As Dictionary
     Sheets(strSheetName).Range(Cells(1, 1), Cells(Parsed("values").Count, 3)) = Values
 
 End Sub
+
+
+
