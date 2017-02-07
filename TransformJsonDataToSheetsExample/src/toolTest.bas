@@ -22,7 +22,6 @@ Dim strUrl As String
         Dim i As Integer
         For i = 1 To 100
             ImportJsonFileDailyToWorksheet strUrl, "series", , strArchiveDirectory, strFileTargetDirectory
-            
         Next i
     End If
     Debug.Print "Completed in: " & Timer - dblStartTime & "Seconds"

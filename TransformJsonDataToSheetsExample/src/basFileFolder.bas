@@ -104,63 +104,6 @@ Public Function BuildDir(strPath) As Boolean
     Set fso = Nothing
 End Function
 
-Public Function GetRelativePathViaParentAlternateRoot(ByVal strRootPath As String, ByVal strDestination As String, Optional ByRef intParentCount As Integer)
-    If Left(strDestination, 3) = "..\" Then
-        intParentCount = intParentCount + 1
-        strRootPath = Left(strRootPath, InStrRev(strRootPath, "\") - 1)
-        strDestination = Right(strDestination, Len(strDestination) - 3)
-        GetRelativePathViaParentAlternateRoot = GetRelativePathViaParentAlternateRoot(strRootPath, strDestination, intParentCount)
-    ElseIf Left(strDestination, 1) = "\" And Not (Left(strDestination, 2) = "\\") Then
-        strDestination = Right(strDestination, Len(strDestination) - 1)
-    ElseIf Right(strDestination, 1) = "\" Then
-        strDestination = Left(strDestination, Len(strDestination) - 1)
-    End If
-    If intParentCount <> -1 Then
-        GetRelativePathViaParentAlternateRoot = StripTrailingBackSlash(strRootPath) & "\" & strDestination
-    End If
-    intParentCount = -1
-End Function
-
-Public Function GetRelativePathViaParent(Optional ByVal strPath As String)
-'Usage for up 2 dirs is GetRelativePathViaParent("..\..\Destination")
-    Dim strVal As String
-    If Left(strPath, 2) = "\\" Or Mid(strPath, 2, 1) = ":" Then
-        strVal = strPath
-    Else
-        Dim strCurrentPath As String
-        Dim oThisApplication As Object:    Set oThisApplication = Application
-        Select Case True
-            Case InStrRev(oThisApplication.Name, "Excel") > 0
-                strCurrentPath = oThisApplication.ThisWorkbook.Path
-            Case InStrRev(oThisApplication.Name, "Access") > 0
-                strCurrentPath = oThisApplication.CurrentProject.Path
-        End Select
-        Dim fIsServerPath As Boolean: fIsServerPath = False
-         If Left(strCurrentPath, 2) = "\\" Then
-             strCurrentPath = Right(strCurrentPath, Len(strCurrentPath) - 2)
-             fIsServerPath = True
-        End If
-        Dim aryCurrentFolder As Variant
-        aryCurrentFolder = Split(strCurrentPath, "\")
-        Dim aryParentPath As Variant
-        aryParentPath = Split(strPath, "..\")
-        If fIsServerPath Then
-            aryCurrentFolder(0) = "\\" & aryCurrentFolder(0)
-        End If
-        Dim intDir As Integer
-        For intDir = 0 To UBound(aryCurrentFolder) - UBound(aryParentPath)
-            strVal = strVal & aryCurrentFolder(intDir) & "\"
-        Next
-        strVal = StripTrailingBackSlash(strVal)
-        If IsArrayAllocated(aryParentPath) Then
-            strVal = strVal & "\" & aryParentPath(UBound(aryParentPath))
-        End If
-    End If
-    If BuildDir(strVal) Then
-        GetRelativePathViaParent = strVal
-    End If
-End Function
-
 Public Sub SaveStringToFile(ByRef strFilePath As String, ByRef strString As String)
 On Error GoTo HandleError
 
@@ -200,27 +143,8 @@ HandleError:
 
 End Sub
 
-Private Function IsArrayAllocated(ByRef avarArray As Variant) As Boolean
-    On Error Resume Next
-    ' Normally we only need to check LBound to determine if an array has been allocated.
-    ' Some function such as Split will set LBound and UBound even if array is not allocated.
-    ' See http://www.cpearson.com/excel/isarrayallocated.aspx for more details.
-    IsArrayAllocated = IsArray(avarArray) And _
-        Not IsError(LBound(avarArray, 1)) And _
-        LBound(avarArray, 1) <= UBound(avarArray, 1)
-End Function
-
-
-Public Function StripTrailingBackSlash(ByRef strPath As String)
-        If Right(strPath, 1) = "\" Then
-            StripTrailingBackSlash = Left(strPath, Len(strPath) - 1)
-        Else
-            StripTrailingBackSlash = strPath
-        End If
-End Function
 
 Public Sub OpenFileWithExplorer(ByRef strFilePath As String, Optional ByRef fReadOnly As Boolean = True)
-
     Dim wshShell
     Set wshShell = CreateObject("WScript.Shell")
     wshShell.Exec ("Explorer.exe " & strFilePath)

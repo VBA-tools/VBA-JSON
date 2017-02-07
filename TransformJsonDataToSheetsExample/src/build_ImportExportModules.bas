@@ -1,8 +1,8 @@
 Attribute VB_Name = "build_ImportExportModules"
 Option Explicit
-'Authored 2014-2017 by Jeremy Dean Gerdes <jeremy.gerdes@navy.mil>
-    'Public Domain in the United States of America,
-     'any international rights are relinquished under CC0 1.0 <https://creativecommons.org/publicdomain/zero/1.0/legalcode>
+'Authored 2015-2017 by Jeremy Dean Gerdes <jeremy.gerdes@navy.mil>
+     'Public Domain in the United States of America,
+     'any international rights are waived through the CC0 1.0 Universal public domain dedication <https://creativecommons.org/publicdomain/zero/1.0/legalcode>
      'http://www.copyright.gov/title17/
      'In accrordance with 17 U.S.C. § 105 This work is 'noncopyright' or in the 'public domain'
          'Subject matter of copyright: United States Government works
@@ -17,22 +17,16 @@ Option Explicit
          'person’s official duties.
          '...
 
-#If True Then 'can only execute on a macro trusted platform
 Private mobjThisVbeProject As Object
 
 Public Sub ToolExportModules(Optional fDeleteFromWorkbookOnExport As Boolean = False)
 'Allways export while the file is in the respective Build folder
-Dim strComponentName As String, strCurrent_FilePath As String
+Dim strComponentName As String
 Dim fso As Object, objFile As Object, objFolder As Object
 Dim intCurrentComponent As Integer, intVbCompontentsCount As Integer
 mSetThisVbeProject
 'Force late binding on applicaton so we can compile and only at runtime do those lines of code execute that are appropriate
     Set fso = CreateObject("Scripting.FileSystemObject")
-    strCurrent_FilePath = GetRelativePathViaParent()
-    'Folder structure is:
-        'Excel only code: /Excel/src
-        'Access only code: /Access/src
-        'Generic code for all (name begins with 'VB_'): /Generic VB/src
     Set fso = CreateObject("Scripting.FileSystemObject")
     'Ensure the Export Directories exists, build them if needed
     intVbCompontentsCount = mobjThisVbeProject.VBComponents.Count
@@ -42,19 +36,18 @@ mSetThisVbeProject
         intCurrentComponent = intCurrentComponent - 1
         strComponentName = mobjThisVbeProject.VBComponents.Item(intCurrentComponent).Name
         If Left(strComponentName, 5) <> "Sheet" And Left(strComponentName, 7) <> "Report_" Then
-            strDestinationPath = ThisWorkbook.Path()
+            strDestinationPath = GetRelativePathViaParent("src")
             Dim objTest As Object
             Set objTest = mobjThisVbeProject.VBComponents.Item(intCurrentComponent)
             Select Case mobjThisVbeProject.VBComponents.Item(intCurrentComponent).Type
                 Case 2 'vbext_ct_ClassModule
-                    mobjThisVbeProject.VBComponents.Item(intCurrentComponent).Export strDestinationPath & "\" & strComponentName & ".cl"
+                    mobjThisVbeProject.VBComponents.Item(intCurrentComponent).Export strDestinationPath & "\" & strComponentName & ".cls"
                 Case 1 'vbext_ct_StdModule
                     mobjThisVbeProject.VBComponents.Item(intCurrentComponent).Export strDestinationPath & "\" & strComponentName & ".bas"
                 Case 100
                     'Do not export 'This Workbook' and sheets
                 Case Else
                     mobjThisVbeProject.VBComponents.Item(intCurrentComponent).Export strDestinationPath & "\" & strComponentName
-                    
             End Select
             If fDeleteFromWorkbookOnExport _
                 And LCase(Left(strComponentName, 6)) <> "build_" _
@@ -69,25 +62,8 @@ End Sub
 
 Public Sub ToolImportModules()
     'This tool can be loaded to a file in the main root folder, build directory, or the excel or access folder
-    mImportVbComponent GetRelativePathViaParent("..\..\General VB\src")
-    mImportVbComponent GetRelativePathViaParent("..\General VB\src")
-    mImportVbComponent GetRelativePathViaParent("General VB\src")
-    mImportVbComponent GetRelativePathViaParent("..\src")
-    mImportVbComponent GetRelativePathViaParent("src")
-    mImportVbComponent GetRelativePathViaParent("..\..\Build")
-    mImportVbComponent GetRelativePathViaParent("..\Build")
-    mImportVbComponent GetRelativePathViaParent("Build")
-    Dim oThisApplication As Object
-    Set oThisApplication = Application
-    Select Case True
-        Case InStrRev(oThisApplication.Name, "Excel") > 0
-                mImportVbComponent GetRelativePathViaParent("Excel\src")
-                mImportVbComponent GetRelativePathViaParent("Excel\Build")
-        Case InStrRev(oThisApplication.Name, "Access") > 0
-                mImportVbComponent GetRelativePathViaParent("Access\src")
-                mImportVbComponent GetRelativePathViaParent("Access\Build")
-        'Case InStrRev(oThisApplication.Name, "Word") > 0
-    End Select
+    mImportVbComponent GetRelativePathViaParent("src", False)
+
 End Sub
 
 Private Sub mSetThisVbeProject()
@@ -173,44 +149,40 @@ Private Function BuildDir(strPath) As Boolean
     BuildDir = (Err.Number = 0) 'True if no errors
 End Function
 
-Private Function GetRelativePathViaParent(Optional ByVal strPath)
+Public Function GetRelativePathViaParent(Optional ByVal strPath As String, Optional fCreateDirectory As Boolean = True)
 'Usage for up 2 dirs is GetRelativePathViaParent("..\..\Destination")
-Dim strCurrentPath As String, strVal As String
-Dim oThisApplication As Object:    Set oThisApplication = Application
-Dim fIsServerPath As Boolean: fIsServerPath = False
-Dim aryCurrentFolder As Variant, aryParentPath As Variant
-    Select Case True
-        Case InStrRev(oThisApplication.Name, "Excel") > 0
-            strCurrentPath = oThisApplication.ThisWorkbook.Path
-        Case InStrRev(oThisApplication.Name, "Access") > 0
-            strCurrentPath = oThisApplication.CurrentProject.Path
-    End Select
-    If Left(strCurrentPath, 2) = "\\" Then
-        strCurrentPath = Right(strCurrentPath, Len(strCurrentPath) - 2)
-        fIsServerPath = True
-    End If
-    aryCurrentFolder = Split(strCurrentPath, "\")
-    If IsMissing(strPath) Then
-        strPath = vbNullString
-    End If
-    aryParentPath = Split(strPath, "..\")
-    If fIsServerPath Then
-        aryCurrentFolder(0) = "\\" & aryCurrentFolder(0)
-    End If
-    Dim intDir As Integer, intParentCount As Integer
-    If UBound(aryParentPath) = -1 Then
-        intParentCount = 0
+    Dim strVal As String
+    If Left(strPath, 2) = "\\" Or Mid(strPath, 2, 1) = ":" Then 'we have a full path and can't use relative path
+        strVal = strPath
     Else
-        intParentCount = UBound(aryParentPath)
+        Dim strCurrentPath As String
+        strCurrentPath = Application.ThisWorkbook.Path
+        Dim fIsServerPath As Boolean: fIsServerPath = False
+         If Left(strCurrentPath, 2) = "\\" Then
+             strCurrentPath = Right(strCurrentPath, Len(strCurrentPath) - 2)
+             fIsServerPath = True
+        End If
+        Dim aryCurrentFolder As Variant
+        aryCurrentFolder = Split(strCurrentPath, "\")
+        Dim aryParentPath As Variant
+        aryParentPath = Split(strPath, "..\")
+        If fIsServerPath Then
+            aryCurrentFolder(0) = "\\" & aryCurrentFolder(0)
+        End If
+        Dim intDir As Integer
+        For intDir = 0 To UBound(aryCurrentFolder) - IIf(IsArrayAllocated(aryParentPath), UBound(aryParentPath), 0)
+            strVal = strVal & aryCurrentFolder(intDir) & "\"
+        Next
+        strVal = StripTrailingBackSlash(strVal)
+        If IsArrayAllocated(aryParentPath) Then
+            strVal = strVal & "\" & aryParentPath(UBound(aryParentPath))
+        End If
     End If
-    For intDir = 0 To UBound(aryCurrentFolder) - intParentCount
-        strVal = strVal & aryCurrentFolder(intDir) & "\"
-    Next
-    strVal = StripTrailingBackSlash(strVal)
-    If IsArrayAllocated(aryParentPath) Then
-        strVal = strVal & "\" & aryParentPath(UBound(aryParentPath))
+    If fCreateDirectory Then
+        BuildDir strVal
     End If
     GetRelativePathViaParent = strVal
+
 End Function
 
 Private Function StripTrailingBackSlash(ByRef strPath As String)
@@ -220,10 +192,3 @@ Private Function StripTrailingBackSlash(ByRef strPath As String)
             StripTrailingBackSlash = strPath
         End If
 End Function
-
-#End If
-
-
-
-
-

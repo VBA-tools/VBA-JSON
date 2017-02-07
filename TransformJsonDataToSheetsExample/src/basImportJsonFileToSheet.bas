@@ -33,7 +33,7 @@ Dim strDesinationWorkbookFileName As String
     If Len(strDesinationFileName) > 0 Then
         strDesinationWorkbookFileName = strDesinationFileName
     Else
-        strDesinationWorkbookFileName = strURLDecode(Left(Right(strUrl, Len(strUrl) - InStrRev(strUrl, "/")), 50 - 6) & Format(Now(), "yymmdd"))
+        strDesinationWorkbookFileName = strURLDecode(Left(Right(strUrl, Len(strUrl) - InStrRev(strUrl, "/")), 50 - 6) & Format(Now(), "yymmddhhss") & Right(Timer, 2))
     End If
     strDesinationWorkbookFileName = RemoveForbiddenFilenameCharacters(strDesinationWorkbookFileName)
     Dim strTempDownloadFile As String
@@ -90,6 +90,7 @@ Dim Parsed As Dictionary
         strSolutionDestinationDirectory = GetRelativePathViaParent(strSolutionDestinationDirectory)
     End If
     wkb.SaveAs strSolutionDestinationDirectory & "\" & strDesinationWorkbookFileName, XlFileFormat.xlExcel8
+    wkb.Close
 End Sub
 
 Private Function GetAllJsonObjectNestedValues( _
