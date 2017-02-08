@@ -4,3 +4,7 @@
 # Ignore scratch work and other files
 _scratch
 .DS_Store
+
+ # Untracked files:
+*exclude*
+ 
