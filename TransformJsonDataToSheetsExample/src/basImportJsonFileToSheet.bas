@@ -33,7 +33,8 @@ Public Sub ImportJsonFileToWorksheet( _
     Optional ByRef strExcelFileSaveDirectory As String, _
     Optional fCloseWorkBook As Boolean = False, _
     Optional fDelteJsonArchiveFile As Boolean = False, _
-    Optional fAppendDateStampToExcelFilename = True _
+    Optional fAppendDateStampToExcelFilename As Boolean = True, _
+    Optional fNewSheetOnNestedArrayFragment As Boolean = False _
 )
 On Error GoTo ExitHere
 'Use when the data posted to the web is only updated daily, we check to see if we have data for that day and only proceed after asking
@@ -46,8 +47,16 @@ uriFileType = mCheckPath(strUrl)
 Dim strDesinationWorkbookFileName As String
     Select Case uriFileType
         Case uriFile
-            
-        Case uriDirectory
+            If Len(strFileNamePrefix) > 0 Then
+                strDesinationWorkbookFileName = Left(strFileNamePrefix, 44)
+            Else
+                strDesinationWorkbookFileName = Left(Right(strUrl, Len(strUrl) - InStrRev(strUrl, "\")), 44)
+                strDesinationWorkbookFileName = Left(strDesinationWorkbookFileName, InStrRev(strDesinationWorkbookFileName, ".") - 1) 'remove extension from JSON file for Prefix of excel file
+            End If
+            If fAppendDateStampToExcelFilename Then
+                strDesinationWorkbookFileName = strDesinationWorkbookFileName & Format(Now(), "yymmddhhss") & Right(Timer, 2)
+            End If
+            strDesinationWorkbookFileName = RemoveForbiddenFilenameCharacters(strDesinationWorkbookFileName)
             
         Case uriHttp
             If Len(strFileNamePrefix) > 0 Then
@@ -61,8 +70,11 @@ Dim strDesinationWorkbookFileName As String
             strDesinationWorkbookFileName = RemoveForbiddenFilenameCharacters(strDesinationWorkbookFileName)
             Dim strTempDownloadFile As String
             strTempDownloadFile = DownloadUriFileToTemp(strUrl, "json", strJsonArchiveDirectory)
+        Case uriDirectory
+            MsgBox "Only http(s) url or existing Files are supported", vbOKOnly, "Transform Json File From Web"
+            Exit Sub
         Case uriUndefined
-            MsgBox "", vbOKOnly, "Transform Json File From Web"
+            MsgBox "Only http(s) url or existing Files are supported", vbOKOnly, "Transform Json File From Web"
             Exit Sub
     End Select
     mlngCurrentDupSheetCount = 1
@@ -72,7 +84,8 @@ Dim strDesinationWorkbookFileName As String
         strJSONObjectNameWithData, _
         strDesinationWorkbookFileName, _
         strExcelFileSaveDirectory, _
-        fCloseWorkBook
+        fCloseWorkBook, _
+        fNewSheetOnNestedArrayFragment
     If fDelteJsonArchiveFile Then
         Kill strTempDownloadFile
     End If
@@ -85,8 +98,9 @@ Sub ExpandJsonToNewWorkbook( _
     strJsonFilePath As String, _
     Optional strJSONObjectNameWithData As String, _
     Optional strDesinationWorkbookFileName As String, _
-    Optional strSolutionDestinationDirectory, _
-    Optional fCloseWorkBook As Boolean = False _
+    Optional strSolutionDestinationDirectory As String, _
+    Optional fCloseWorkBook As Boolean = False, _
+    Optional fNewSheetOnNestedArrayFragment As Boolean = False _
 )
 Dim fso As Object: Set fso = CreateObject("Scripting.FileSystemObject") 'New FileSystemObject
 Dim JsonTS As Object ' TextStream
@@ -122,7 +136,7 @@ Dim Parsed As Dictionary
     End Select
         
     '----------------------------------------------
-    GetAllJsonObjectNestedValues jsonData, wkb, wsh
+    GetAllJsonObjectNestedValues jsonData, wkb, wsh, wsh.Name, fNewSheetOnNestedArrayFragment
     '----------------------------------------------
     'Cleanup
     For Each wsh In wkb.Sheets
@@ -148,11 +162,13 @@ Private Function GetAllJsonObjectNestedValues( _
             ByRef objJson As Variant, _
             ByRef wkb As Workbook, _
             ByRef wsh As Worksheet, _
-            Optional strPreviousObjectKey As String) _
+            Optional strPreviousObjectKey As String, _
+            Optional fNewSheetOnNestedArrayFragment As Boolean = False _
+) _
 As Variant
 'This method is overly optimistic that each object will hold data, we will create a sheet even for empty objects, if a
 'sheet is found to have no data we delete it, a possibly faster/less memory intensive way would be to run through the json file
-'once to determine what objects hold no data first, and ignore them
+'once to determine what objects hold no data first, and ignore them, we may need to do this any way to determine how best to represent the data into tables...
 '-------------------
 'additionally there is no direct relationship displayed from the nested object to it's parent using this method, this will
 'have to be built out and incorperated to properly import into a relational database if that data is needed
@@ -163,8 +179,8 @@ As Variant
     Select Case TypeName(objJson)
         Case "Dictionary"
             If objJson.Count > 0 Then
-                Dim lngDataRow As Variant
-                lngDataRow = 1
+                Dim varDataRow As Variant
+                varDataRow = 1
                 Dim lngItem As Long
                 For lngItem = 0 To objJson.Count - 1
                     Dim varKey As Variant
@@ -188,14 +204,14 @@ As Variant
                             Case "Dictionary"
                                 Dim objItemDictionary As Dictionary
                                 Set objItemDictionary = objJson.Items()(lngItem)
-                                objRecursive = GetAllJsonObjectNestedValues(objItemDictionary, wkb, mNewDictionaryWorkSheet(sheetName, wkb), strKeyName)
+                                objRecursive = GetAllJsonObjectNestedValues(objItemDictionary, wkb, mCreateWorkSheet(sheetName, wkb), strKeyName, fNewSheetOnNestedArrayFragment)
                             Case "Collection"
                                 Dim objItem As Variant
                                 Set objItem = objJson.Items()(lngItem)
                                 Select Case TypeName(objItem)
                                     Case "Dictionary"
                                         Set tmpDictionary = objItem
-                                        objRecursive = GetAllJsonObjectNestedValues(objItem, wkb, mNewDictionaryWorkSheet(sheetName, wkb), strKeyName)   'Executing this debug prints for testing untill we decide how to export this data to a spreedsheet appropriately
+                                        objRecursive = GetAllJsonObjectNestedValues(objItem, wkb, mCreateWorkSheet(sheetName, wkb), strKeyName, fNewSheetOnNestedArrayFragment)  'Executing this debug prints for testing untill we decide how to export this data to a spreedsheet appropriately
                                     Case "Collection"
                                         mWriteCollectionToSheet _
                                             objItem, _
@@ -206,7 +222,8 @@ As Variant
                                             objRecursive, _
                                             wsh, _
                                             varKey, _
-                                            lngItem
+                                            lngItem, _
+                                            fNewSheetOnNestedArrayFragment
                                 End Select
                             Case Else
                                 varItem = objJson.Items()(lngItem)
@@ -214,7 +231,7 @@ As Variant
                                     varItem, _
                                     wsh, _
                                     strKeyName, _
-                                    lngDataRow, _
+                                    varDataRow, _
                                     lngItem, _
                                     varKey
                         End Select
@@ -224,58 +241,60 @@ As Variant
                             varItem, _
                             wsh, _
                             strKeyName, _
-                            lngDataRow, _
+                            varDataRow, _
                             lngItem, _
                             varKey
                     End If
                 Next lngItem
             End If
         Case "Collection"
-            Dim lngCollectionItem As Long
-           ' For lngCollectionItem = 0 To objJson.Count - 1
                 mWriteCollectionToSheet _
                     objJson, _
                     tmpDictionary, _
                     wkb, _
-                    wsh.Name, _
-                    strKeyName, _
+                    "Json_array", _
+                    "Json_array", _
                     objJson, _
                     wsh, _
-                    varKey, _
-                    lngCollectionItem
-            'Next lngCollectionItem
-        Case Else 'must be a Number, String, Boolean, or null
-            varItem = objJson.Items()(lngCollectionItem)
+                    "Json_array", _
+                    1, _
+                    fNewSheetOnNestedArrayFragment
+        Case Else 'must be a Number, String, Boolean, or null,
+        'we can't get here currently as the JSON converter doesn't handle JSON text that does not
+        'begin with a dictionary or collection (object or array), this is contrary to the spec and should be corrected
+            varItem = objJson.Items()(1)
             mWriteElementToTable _
                 varItem, _
                 wsh, _
-                strKeyName, _
-                lngDataRow, _
+                "Json_Data", _
+                varDataRow, _
                 lngItem, _
-                varKey
+                "Json_name"
     End Select
 End Function
 
-Private Function mNewDictionaryWorkSheet(sheetName As String, wkb As Workbook) As Worksheet
+Private Function mCreateWorkSheet(sheetName As String, wkb As Workbook) As Worksheet
     If SheetExists(sheetName, wkb) Then
         mlngCurrentDupSheetCount = mlngCurrentDupSheetCount + 1
-        Set mNewDictionaryWorkSheet = CreateWorksheet(sheetName & mlngCurrentDupSheetCount, wkb:=wkb)
+        Set mCreateWorkSheet = CreateWorksheet(sheetName & mlngCurrentDupSheetCount, wkb:=wkb)
     Else
-        Set mNewDictionaryWorkSheet = CreateWorksheet(sheetName, wkb:=wkb)
+        Set mCreateWorkSheet = CreateWorksheet(sheetName, wkb:=wkb)
     End If
     
 End Function
 
 Private Sub mWriteCollectionToSheet( _
-    objItem As Variant, _
-    tmpDictionary As Dictionary, _
-    wkb As Workbook, _
-    strNewSheetName As String, _
-    strKeyName As String, _
-    objRecursive As Variant, _
-    wsh As Worksheet, _
-    varKey As Variant, _
-    lngItem As Long)
+                objItem As Variant, _
+                tmpDictionary As Dictionary, _
+                wkb As Workbook, _
+                strNewSheetName As String, _
+                strKeyName As String, _
+                objRecursive As Variant, _
+                wsh As Worksheet, _
+                varKey As Variant, _
+                lngItem As Long, _
+                fNewSheetOnNestedArrayFragment As Boolean _
+)
 Dim objItemElement As Variant
 Dim lngItemElementCounter As Long
     lngItemElementCounter = 0
@@ -283,7 +302,12 @@ Dim lngItemElementCounter As Long
         lngItemElementCounter = lngItemElementCounter + 1
         If TypeName(objItemElement) = "Dictionary" Then
             Set tmpDictionary = objItemElement
-            objRecursive = GetAllJsonObjectNestedValues(tmpDictionary, wkb, wsh, strKeyName)
+            'sometimes we need to create a worksheet, some times we don't need to review the JSON spec...
+            If fNewSheetOnNestedArrayFragment Then
+                objRecursive = GetAllJsonObjectNestedValues(tmpDictionary, wkb, mCreateWorkSheet(strNewSheetName, wkb), strKeyName, fNewSheetOnNestedArrayFragment)
+            Else
+                objRecursive = GetAllJsonObjectNestedValues(tmpDictionary, wkb, wsh, strKeyName, fNewSheetOnNestedArrayFragment)
+            End If
         Else
             wsh.Activate
             If lngItemElementCounter = 1 Then 'Add Column Header
@@ -299,19 +323,19 @@ End Sub
 Private Sub mWriteElementToTable( _
     varItem As Variant, _
     wsh As Worksheet, _
-    strKeyName, _
-    lngDataRow, _
-    lngItem, _
-    varKey _
+    strKeyName As String, _
+    varDataRow As Variant, _
+    lngItem As Long, _
+    varKey As Variant _
 )
     wsh.Activate
     If strKeyName = CStr(wsh.Range(Cells(1, 1), Cells(1, 1)).value) Then
-        lngDataRow = wsh.UsedRange.Rows.Count 'Assuming the same column header value = new row in any key value pair list
+        varDataRow = wsh.UsedRange.Rows.Count 'Assuming the same column header value = new row in any key value pair list
     End If
-    If lngDataRow = 1 Then
-        wsh.Range(Cells(lngDataRow, lngItem + 1), Cells(lngDataRow, lngItem + 1)).value = varKey
+    If varDataRow = 1 Then
+        wsh.Range(Cells(varDataRow, lngItem + 1), Cells(varDataRow, lngItem + 1)).value = varKey
     End If
-    wsh.Range(Cells(lngDataRow + 1, lngItem + 1), Cells(lngDataRow + 1, lngItem + 1)).value = varItem
+    wsh.Range(Cells(varDataRow + 1, lngItem + 1), Cells(varDataRow + 1, lngItem + 1)).value = varItem
 End Sub
 
 '********************************************************************
@@ -327,16 +351,20 @@ End Sub
 '********************************************************************
 Private Function mCheckPath(path) As uriType
     Dim retval
-    retval = uriUndefined
-    If (retval = uriUndefined) And mHttpExists(path) Then
-        retval = uriHttp
-    End If
-    If (retval = uriUndefined) And mFileExists(path) Then
-        retval = uriFile
-    End If
-    If (retval = uriUndefined) And mDirectoryExists(path) Then
-        retval = uriDirectory
-    End If
+    Select Case True 'select case only tests one at a time and stops on the first True solution.
+        Case mHttpExists(path)
+            retval = uriHttp
+        Case mFileExists(path)
+            retval = uriFile
+        Case mFileExists(GetRelativePathViaParent(path))
+            retval = uriFile
+        Case mDirectoryExists(path)
+            retval = uriDirectory
+        Case mDirectoryExists(GetRelativePathViaParent(path))
+            retval = uriDirectory
+        Case Else
+            retval = uriUndefined
+    End Select
     mCheckPath = retval
 End Function
 
@@ -384,7 +412,6 @@ Private Function mHttpExists(ByVal sURL As String) As Boolean
     End If
     oXHTTP.Open "HEAD", sURL, False
     oXHTTP.send
-    Debug.Print oXHTTP.Status
     Select Case oXHTTP.Status
         Case 200 To 399, 403, 426 ' maybe 100 and 101?
             'The 2xx (Successful) class of status code indicates that the client's
