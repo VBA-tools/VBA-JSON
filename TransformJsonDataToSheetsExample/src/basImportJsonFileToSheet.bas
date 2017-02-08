@@ -18,6 +18,7 @@ Option Explicit
          '...
 Private mlngCurrentDupSheetCount As Long
 Private mfNewSheetOnNestedArrayFragment As Boolean
+Private objParsedJson As Variant
 Private Enum uriType
     uriFile = 1
     uriDirectory = 2
@@ -92,10 +93,10 @@ ExitHere:
 End Sub
 
 Sub ExpandJsonToNewWorkbook( _
-    strJsonFilePath As String, _
-    Optional strJSONObjectNameWithData As String, _
-    Optional strDesinationWorkbookFileName As String, _
-    Optional strSolutionDestinationDirectory As String, _
+    ByRef strJsonFilePath As String, _
+    Optional ByRef strJSONObjectNameWithData As String, _
+    Optional ByRef strDesinationWorkbookFileName As String, _
+    Optional ByRef strSolutionDestinationDirectory As String, _
     Optional fCloseWorkBook As Boolean = False, _
     Optional fNewSheetOnNestedArrayFragment As Boolean = False _
 )
@@ -116,7 +117,9 @@ Dim Parsed As Dictionary
     Set fso = Nothing
     '----------------------------------------------
     'Parse JSON
-    Dim jsonData As Variant: Set jsonData = ParseJson(JsonText)
+    Dim jsonData As Variant
+    Set objParsedJson = ParseJson(JsonText)
+    Set jsonData = objParsedJson
     Dim wkb As Workbook: Set wkb = Application.Workbooks.Add()
     Dim wsh As Worksheet: Set wsh = wkb.Sheets(1)
     '----------------------------------------------
@@ -156,11 +159,11 @@ Dim Parsed As Dictionary
 End Sub
 
 Private Function GetAllJsonObjectNestedValues( _
-            ByRef objJson As Variant, _
-            ByRef wkb As Workbook, _
-            ByRef wsh As Worksheet, _
-            Optional strPreviousObjectKey As String, _
-            Optional fNewSheetOnNestedArrayFragment As Boolean = False _
+    ByRef objJson As Variant, _
+    ByRef wkb As Workbook, _
+    ByRef wsh As Worksheet, _
+    Optional ByRef strPreviousObjectKey As String, _
+    Optional ByRef fNewSheetOnNestedArrayFragment As Boolean = False _
 ) _
 As Variant
 'This method is overly optimistic that each object will hold data, we will create a sheet even for empty objects, if a
@@ -171,7 +174,6 @@ As Variant
 'have to be built out and incorperated to properly import into a relational database if that data is needed
 'TODO need to read https://tools.ietf.org/html/rfc7159#section-2
 'and clarify the object object relation ships found in the spec here
-    mfNewSheetOnNestedArrayFragment = fNewSheetOnNestedArrayFragment
     wsh.Activate
     Select Case TypeName(objJson)
         Case "Dictionary"
@@ -179,6 +181,7 @@ As Variant
                 Dim varDataRow As Variant
                 varDataRow = 1
                 Dim lngItem As Long
+                'mCreateWorkSheet(strPreviousObjectKey,wkb)
                 For lngItem = 0 To objJson.Count - 1
                     Dim varKey As Variant
                     Dim strKeyName As String
@@ -201,18 +204,27 @@ As Variant
                             Case "Dictionary"
                                 Dim objItemDictionary As Dictionary
                                 Set objItemDictionary = objJson.Items()(lngItem)
-                                objRecursive = GetAllJsonObjectNestedValues(objItemDictionary, wkb, mCreateWorkSheet(sheetName, wkb), strKeyName, fNewSheetOnNestedArrayFragment)
+                                objRecursive = GetAllJsonObjectNestedValues( _
+                                    objItemDictionary, _
+                                    wkb, _
+                                    mCreateWorkSheet(sheetName, wkb), _
+                                    strKeyName, _
+                                    fNewSheetOnNestedArrayFragment)
                             Case "Collection"
                                 Dim objItem As Variant
                                 Set objItem = objJson.Items()(lngItem)
                                 Select Case TypeName(objItem)
                                     Case "Dictionary"
                                         Set tmpDictionary = objItem
-                                        objRecursive = GetAllJsonObjectNestedValues(objItem, wkb, mCreateWorkSheet(sheetName, wkb), strKeyName, fNewSheetOnNestedArrayFragment)  'Executing this debug prints for testing untill we decide how to export this data to a spreedsheet appropriately
+                                        objRecursive = GetAllJsonObjectNestedValues( _
+                                            objItem, _
+                                            wkb, _
+                                            mCreateWorkSheet(sheetName, wkb), _
+                                            strKeyName, _
+                                            fNewSheetOnNestedArrayFragment)
                                     Case "Collection"
                                         mWriteCollectionToSheet _
                                             objItem, _
-                                            tmpDictionary, _
                                             wkb, _
                                             sheetName, _
                                             strKeyName, _
@@ -245,9 +257,9 @@ As Variant
                 Next lngItem
             End If
         Case "Collection"
+                mfNewSheetOnNestedArrayFragment = fNewSheetOnNestedArrayFragment
                 mWriteCollectionToSheet _
                     objJson, _
-                    tmpDictionary, _
                     wkb, _
                     "Json_array", _
                     "Json_array", _
@@ -255,7 +267,7 @@ As Variant
                     wsh, _
                     "Json_array", _
                     1, _
-                    True
+                    False
         Case Else 'must be a Number, String, Boolean, or null,
         'we can't get here currently as the JSON converter doesn't handle JSON text that does not
         'begin with a dictionary or collection (object or array), this is contrary to the spec and should be corrected
@@ -270,7 +282,7 @@ As Variant
     End Select
 End Function
 
-Private Function mCreateWorkSheet(sheetName As String, wkb As Workbook) As Worksheet
+Private Function mCreateWorkSheet(ByRef sheetName As String, ByRef wkb As Workbook) As Worksheet
     If SheetExists(sheetName, wkb) Then
         mlngCurrentDupSheetCount = mlngCurrentDupSheetCount + 1
         Set mCreateWorkSheet = CreateWorksheet(sheetName & mlngCurrentDupSheetCount, wkb:=wkb)
@@ -281,19 +293,19 @@ Private Function mCreateWorkSheet(sheetName As String, wkb As Workbook) As Works
 End Function
 
 Private Sub mWriteCollectionToSheet( _
-                objItem As Variant, _
-                tmpDictionary As Dictionary, _
-                wkb As Workbook, _
-                strNewSheetName As String, _
-                strKeyName As String, _
-                objRecursive As Variant, _
-                wsh As Worksheet, _
-                varKey As Variant, _
-                lngItem As Long, _
-                fNewSheetOnNestedArrayFragment As Boolean _
+    ByRef objItem As Variant, _
+    ByRef wkb As Workbook, _
+    ByRef strNewSheetName As String, _
+    ByRef strKeyName As String, _
+    ByRef objRecursive As Variant, _
+    ByRef wsh As Worksheet, _
+    ByRef varKey As Variant, _
+    ByRef lngItem As Long, _
+    ByRef fNewSheetOnNestedArrayFragment As Boolean _
 )
 Dim objItemElement As Variant
 Dim lngItemElementCounter As Long
+Dim tmpDictionary As Variant
     lngItemElementCounter = 0
     For Each objItemElement In objItem
         lngItemElementCounter = lngItemElementCounter + 1
@@ -318,12 +330,12 @@ Dim lngItemElementCounter As Long
 End Sub
 
 Private Sub mWriteElementToTable( _
-    varItem As Variant, _
-    wsh As Worksheet, _
-    strKeyName As String, _
-    varDataRow As Variant, _
-    lngItem As Long, _
-    varKey As Variant _
+    ByRef varItem As Variant, _
+    ByRef wsh As Worksheet, _
+    ByRef strKeyName As String, _
+    ByRef varDataRow As Variant, _
+    ByRef lngItem As Long, _
+    ByRef varKey As Variant _
 )
     wsh.Activate
     If strKeyName = CStr(wsh.Range(Cells(1, 1), Cells(1, 1)).value) Then
