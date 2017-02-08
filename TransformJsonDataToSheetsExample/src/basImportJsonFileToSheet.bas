@@ -17,7 +17,7 @@ Option Explicit
          'person’s official duties.
          '...
 Private mlngCurrentDupSheetCount As Long
-
+Private mfNewSheetOnNestedArrayFragment As Boolean
 Private Enum uriType
     uriFile = 1
     uriDirectory = 2
@@ -39,12 +39,10 @@ Public Sub ImportJsonFileToWorksheet( _
 On Error GoTo ExitHere
 'Use when the data posted to the web is only updated daily, we check to see if we have data for that day and only proceed after asking
 Application.ScreenUpdating = False
-
-'We expect either a Uri or a file, for now check File Exists and then assume it's a Uri if it doesn't
-'a more complete method is something like: http://stackoverflow.com/questions/9724779/vba-identifying-whether-a-string-is-a-file-a-Directory-or-a-web-Uri
-Dim uriFileType As uriType
-uriFileType = mCheckPath(strUrl)
+'We expect either a http url or a file, TODO add support for FTP
 Dim strDesinationWorkbookFileName As String
+Dim strJsonSourceFilePath As String
+Dim uriFileType As uriType: uriFileType = mCheckPath(strUrl)
     Select Case uriFileType
         Case uriFile
             If Len(strFileNamePrefix) > 0 Then
@@ -57,7 +55,7 @@ Dim strDesinationWorkbookFileName As String
                 strDesinationWorkbookFileName = strDesinationWorkbookFileName & Format(Now(), "yymmddhhss") & Right(Timer, 2)
             End If
             strDesinationWorkbookFileName = RemoveForbiddenFilenameCharacters(strDesinationWorkbookFileName)
-            
+            strJsonSourceFilePath = GetRelativePathViaParent(strUrl)
         Case uriHttp
             If Len(strFileNamePrefix) > 0 Then
                 strDesinationWorkbookFileName = Left(strFileNamePrefix, 44)
@@ -68,8 +66,7 @@ Dim strDesinationWorkbookFileName As String
                 strDesinationWorkbookFileName = strDesinationWorkbookFileName & Format(Now(), "yymmddhhss") & Right(Timer, 2)
             End If
             strDesinationWorkbookFileName = RemoveForbiddenFilenameCharacters(strDesinationWorkbookFileName)
-            Dim strTempDownloadFile As String
-            strTempDownloadFile = DownloadUriFileToTemp(strUrl, "json", strJsonArchiveDirectory)
+            strJsonSourceFilePath = DownloadUriFileToTemp(strUrl, "json", strJsonArchiveDirectory)
         Case uriDirectory
             MsgBox "Only http(s) url or existing Files are supported", vbOKOnly, "Transform Json File From Web"
             Exit Sub
@@ -80,14 +77,14 @@ Dim strDesinationWorkbookFileName As String
     mlngCurrentDupSheetCount = 1
     '---------------------------------
     ExpandJsonToNewWorkbook _
-        strTempDownloadFile, _
+        strJsonSourceFilePath, _
         strJSONObjectNameWithData, _
         strDesinationWorkbookFileName, _
         strExcelFileSaveDirectory, _
         fCloseWorkBook, _
         fNewSheetOnNestedArrayFragment
     If fDelteJsonArchiveFile Then
-        Kill strTempDownloadFile
+        Kill strJsonSourceFilePath
     End If
 ExitHere:
     Application.ScreenUpdating = True
@@ -174,7 +171,7 @@ As Variant
 'have to be built out and incorperated to properly import into a relational database if that data is needed
 'TODO need to read https://tools.ietf.org/html/rfc7159#section-2
 'and clarify the object object relation ships found in the spec here
-
+    mfNewSheetOnNestedArrayFragment = fNewSheetOnNestedArrayFragment
     wsh.Activate
     Select Case TypeName(objJson)
         Case "Dictionary"
@@ -258,7 +255,7 @@ As Variant
                     wsh, _
                     "Json_array", _
                     1, _
-                    fNewSheetOnNestedArrayFragment
+                    True
         Case Else 'must be a Number, String, Boolean, or null,
         'we can't get here currently as the JSON converter doesn't handle JSON text that does not
         'begin with a dictionary or collection (object or array), this is contrary to the spec and should be corrected
@@ -304,9 +301,9 @@ Dim lngItemElementCounter As Long
             Set tmpDictionary = objItemElement
             'sometimes we need to create a worksheet, some times we don't need to review the JSON spec...
             If fNewSheetOnNestedArrayFragment Then
-                objRecursive = GetAllJsonObjectNestedValues(tmpDictionary, wkb, mCreateWorkSheet(strNewSheetName, wkb), strKeyName, fNewSheetOnNestedArrayFragment)
+                objRecursive = GetAllJsonObjectNestedValues(tmpDictionary, wkb, mCreateWorkSheet(strNewSheetName, wkb), strKeyName, mfNewSheetOnNestedArrayFragment)
             Else
-                objRecursive = GetAllJsonObjectNestedValues(tmpDictionary, wkb, wsh, strKeyName, fNewSheetOnNestedArrayFragment)
+                objRecursive = GetAllJsonObjectNestedValues(tmpDictionary, wkb, wsh, strKeyName, mfNewSheetOnNestedArrayFragment)
             End If
         Else
             wsh.Activate
@@ -349,7 +346,7 @@ End Sub
 'You may freely use anything (code, forms, algorithms, ...) from these articles and sample databases for any purpose (personal, educational, commercial, resale, ...). All we ask is that you acknowledge this website in your code, with comments such as:
 'Source: http://allenbrowne.com
 '********************************************************************
-Private Function mCheckPath(path) As uriType
+Private Function mCheckPath(ByVal path) As uriType
     Dim retval
     Select Case True 'select case only tests one at a time and stops on the first True solution.
         Case mHttpExists(path)
