@@ -17,14 +17,14 @@ Option Explicit
          'person’s official duties.
          '...
 
-Public Const ForReading = 1
-Public Const ForWriting = 2
-Public Const ForAppending = 8
-
 Private Declare Function URLDownloadToFileA Lib "urlmon" (ByVal pCaller As Long, _
     ByVal szURL As String, ByVal szFileName As String, ByVal dwReserved As Long, _
     ByVal lpfnCB As Long) _
 As Long
+
+Public Const ForReading = 1
+Public Const ForWriting = 2
+Public Const ForAppending = 8
 
 Public Function RemoveForbiddenFilenameCharacters(strFilename As String) As String
 'https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx
@@ -44,7 +44,7 @@ Dim strForbidden As Variant
     RemoveForbiddenFilenameCharacters = strFilename
 End Function
 
-Public Function DownloadUrlFileToTemp( _
+Public Function DownloadUriFileToTemp( _
     ByVal strUrl As String, _
     Optional ByVal strDestinationExtension As String = "txt", _
     Optional strJsonArchiveDirectory As String) _
@@ -63,15 +63,14 @@ As String
     If lngRetVal Then
         Err.Raise Err.LastDllError, , "Download failed."
     End If
-    DownloadUrlFileToTemp = strTempFilePath
-    Debug.Print strTempFilePath
+    DownloadUriFileToTemp = strTempFilePath
 End Function
 
 Public Function DeleteFile(strPath As String) As Boolean
     On Error Resume Next
     Dim fso As Object ' As Scripting.FileSystemObject
     Set fso = CreateObject("Scripting.FileSystemObject") ' New Scripting.FileSystemObject
-    If fso.FileExists(strPath) Then
+    If fso.mFileExists(strPath) Then
         fso.DeleteFile strPath
     End If
     DeleteFile = Err.Number = 0
@@ -95,8 +94,8 @@ Public Function BuildDir(strPath) As Boolean
     End If
     For intDir = 0 To UBound(arryPaths)
         strBuiltPath = strBuiltPath & arryPaths(intDir)
-        If Not fso.FolderExists(strBuiltPath) Then
-            fso.CreateFolder strBuiltPath
+        If Not fso.DirectoryExists(strBuiltPath) Then
+            fso.CreateDirectory strBuiltPath
         End If
         strBuiltPath = strBuiltPath & "\"
     Next

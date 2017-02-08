@@ -20,9 +20,9 @@ Option Explicit
 Private mobjThisVbeProject As Object
 
 Public Sub ToolExportModules(Optional fDeleteFromWorkbookOnExport As Boolean = False)
-'Allways export while the file is in the respective Build folder
+'Allways export while the file is in the respective Build Directory
 Dim strComponentName As String
-Dim fso As Object, objFile As Object, objFolder As Object
+Dim fso As Object, objFile As Object, objDirectory As Object
 Dim intCurrentComponent As Integer, intVbCompontentsCount As Integer
 mSetThisVbeProject
 'Force late binding on applicaton so we can compile and only at runtime do those lines of code execute that are appropriate
@@ -61,7 +61,7 @@ NextComponent:
 End Sub
 
 Public Sub ToolImportModules()
-    'This tool can be loaded to a file in the main root folder, build directory, or the excel or access folder
+    'This tool can be loaded to a file in the main root Directory, build directory, or the excel or access Directory
     mImportVbComponent GetRelativePathViaParent("src", False)
 
 End Sub
@@ -71,7 +71,7 @@ Private Sub mSetThisVbeProject()
     If mobjThisVbeProject Is Nothing Then
         Dim vbeProject As Object
         For Each vbeProject In Application.VBE.VBProjects()
-            If vbeProject.Filename = ThisWorkbook.Path & "\" & ThisWorkbook.Name Then
+            If vbeProject.Filename = ThisWorkbook.path & "\" & ThisWorkbook.Name Then
                 Set mobjThisVbeProject = vbeProject
                 GoTo ExitHere
             End If
@@ -82,21 +82,21 @@ ExitHere:
     End If
 End Sub
 
-Private Sub mImportVbComponent(strFolderSource)
+Private Sub mImportVbComponent(strDirectoriesource)
     Dim fil As Object, fso As Object
     Set fso = CreateObject("Scripting.FileSystemObject")
     mSetThisVbeProject
-    If fso.FolderExists(strFolderSource) Then
-        For Each fil In fso.GetFolder(strFolderSource).Files
+    If fso.DirectoryExists(strDirectoriesource) Then
+        For Each fil In fso.GetDirectory(strDirectoriesource).Files
             Dim strExtension As String: strExtension = LCase(mGetFileExtension(fil.Name))
             If strExtension = "cl" Or strExtension = "bas" Or Len(strExtension) = 0 Then
                 If VbComponentExits(fil.Name) Then
                     If MsgBox("Do you want to replace the existing Visual Basic Component with the file:" & fil.Name & " - last modified:" & fil.DateLastModified & "?", vbYesNo + vbQuestion, "VBA Statistics Import Conflict") = vbYes Then
                         mobjThisVbeProject.VBComponents.Remove Application.VBE.ActiveVBProject.VBComponents(Left(fil.Name, InStrRev(fil.Name, ".") - 1))
-                        mobjThisVbeProject.VBComponents.Import (fil.Path)
+                        mobjThisVbeProject.VBComponents.Import (fil.path)
                     End If
                 Else
-                    mobjThisVbeProject.VBComponents.Import (fil.Path)
+                    mobjThisVbeProject.VBComponents.Import (fil.path)
                 End If
             End If
         Next
@@ -141,8 +141,8 @@ Private Function BuildDir(strPath) As Boolean
     End If
     For intDir = 0 To UBound(arryPaths)
         strBuiltPath = strBuiltPath & arryPaths(intDir)
-        If Not fso.FolderExists(strBuiltPath) Then
-            fso.CreateFolder strBuiltPath
+        If Not fso.DirectoryExists(strBuiltPath) Then
+            fso.CreateDirectory strBuiltPath
         End If
         strBuiltPath = strBuiltPath & "\"
     Next
@@ -156,22 +156,22 @@ Public Function GetRelativePathViaParent(Optional ByVal strPath As String, Optio
         strVal = strPath
     Else
         Dim strCurrentPath As String
-        strCurrentPath = Application.ThisWorkbook.Path
+        strCurrentPath = Application.ThisWorkbook.path
         Dim fIsServerPath As Boolean: fIsServerPath = False
          If Left(strCurrentPath, 2) = "\\" Then
              strCurrentPath = Right(strCurrentPath, Len(strCurrentPath) - 2)
              fIsServerPath = True
         End If
-        Dim aryCurrentFolder As Variant
-        aryCurrentFolder = Split(strCurrentPath, "\")
+        Dim aryCurrentDirectory As Variant
+        aryCurrentDirectory = Split(strCurrentPath, "\")
         Dim aryParentPath As Variant
         aryParentPath = Split(strPath, "..\")
         If fIsServerPath Then
-            aryCurrentFolder(0) = "\\" & aryCurrentFolder(0)
+            aryCurrentDirectory(0) = "\\" & aryCurrentDirectory(0)
         End If
         Dim intDir As Integer
-        For intDir = 0 To UBound(aryCurrentFolder) - IIf(IsArrayAllocated(aryParentPath), UBound(aryParentPath), 0)
-            strVal = strVal & aryCurrentFolder(intDir) & "\"
+        For intDir = 0 To UBound(aryCurrentDirectory) - IIf(IsArrayAllocated(aryParentPath), UBound(aryParentPath), 0)
+            strVal = strVal & aryCurrentDirectory(intDir) & "\"
         Next
         strVal = StripTrailingBackSlash(strVal)
         If IsArrayAllocated(aryParentPath) Then

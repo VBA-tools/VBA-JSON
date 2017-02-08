@@ -1,62 +1,62 @@
 Attribute VB_Name = "basUrlEncodeDecode"
 Option Explicit
 
-Public Function strURLEncode( _
+Public Function strUrlEncode( _
    strStringToEncode As String, _
    Optional fUsePlusRatherThanHexForSpace As Boolean = False _
 ) As String
 
-  Dim strCurURL As String
+  Dim strCurUri As String
   Dim intCurChr As Integer
   intCurChr = 1
 
   Do Until intCurChr - 1 = Len(strStringToEncode)
     Select Case Asc(Mid(strStringToEncode, intCurChr, 1))
       Case 48 To 57, 65 To 90, 97 To 122
-        strCurURL = strCurURL & Mid(strStringToEncode, intCurChr, 1)
+        strCurUri = strCurUri & Mid(strStringToEncode, intCurChr, 1)
       Case 32
         If fUsePlusRatherThanHexForSpace = True Then
-          strCurURL = strCurURL & "+"
+          strCurUri = strCurUri & "+"
         Else
-          strCurURL = strCurURL & "%" & Hex(32)
+          strCurUri = strCurUri & "%" & Hex(32)
         End If
       Case Else
-        strCurURL = strCurURL & "%" & _
+        strCurUri = strCurUri & "%" & _
           Right("0" & Hex(Asc(Mid(strStringToEncode, _
           intCurChr, 1))), 2)
     End Select
     intCurChr = intCurChr + 1
   Loop
 
-  strURLEncode = strCurURL
+  strUrlEncode = strCurUri
 
 End Function
 
-Public Function strURLDecode(strEncodedURL As String) As String
+Public Function strUrlDecode(strEncodedUri As String) As String
 
 Dim intCurChr As Integer
-Dim strCurURL As String
-Dim strTempURL As String
+Dim strCurUri As String
+Dim strTempUri As String
 
-    If Len(strEncodedURL) > 0 Then
+    If Len(strEncodedUri) > 0 Then
         ' Loop through each char
-        For intCurChr = 1 To Len(strEncodedURL)
-            strTempURL = Mid(strEncodedURL, intCurChr, 1)
-            strTempURL = Replace(strTempURL, "+", " ")
+        For intCurChr = 1 To Len(strEncodedUri)
+            strTempUri = Mid(strEncodedUri, intCurChr, 1)
+            strTempUri = Replace(strTempUri, "+", " ")
             ' If char is % then get next two chars
             ' and convert from HEX to decimal
-            If strTempURL = "%" And Len(strEncodedURL) + 1 > intCurChr + 2 Then
-                strTempURL = Mid(strEncodedURL, intCurChr + 1, 2)
-                strTempURL = Chr(CDec("&H" & strTempURL))
+            If strTempUri = "%" And Len(strEncodedUri) + 1 > intCurChr + 2 Then
+                strTempUri = Mid(strEncodedUri, intCurChr + 1, 2)
+                strTempUri = Chr(CDec("&H" & strTempUri))
                 ' Increment loop by 2
                 intCurChr = intCurChr + 2
             End If
-            strCurURL = strCurURL & strTempURL
+            strCurUri = strCurUri & strTempUri
         Next
 
-        strURLDecode = strCurURL
+        strUrlDecode = strCurUri
     Else
-        strURLDecode = ""
+        strUrlDecode = ""
     End If
 End Function
 

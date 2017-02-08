@@ -17,11 +17,11 @@ Dim strUrl As String
     Dim dblStartTime As Double
     dblStartTime = Timer
     strUrl = "https://api.bls.gov/publicAPI/v1/timeseries/data/LIUR0000SL00019" 'LEU0254555900'LIUR0000SL00019
-    ImportJsonFileDailyToWorksheet strUrl, "series", , strArchiveDirectory, strFileTargetDirectory
+    ImportJsonFileToWorksheet strUrl, "series", , strArchiveDirectory, strFileTargetDirectory
     If fForceTooManyCallsError Then
         Dim i As Integer
         For i = 1 To 100
-            ImportJsonFileDailyToWorksheet strUrl, "series", , strArchiveDirectory, strFileTargetDirectory
+            ImportJsonFileToWorksheet strUrl, "series", , strArchiveDirectory, strFileTargetDirectory
         Next i
     End If
     Debug.Print "Completed in: " & Timer - dblStartTime & "Seconds"

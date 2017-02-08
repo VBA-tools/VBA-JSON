@@ -166,6 +166,7 @@ Public Function ParseJson(ByVal JsonString As String) As Object
     Case "["
         Set ParseJson = json_ParseArray(JsonString, json_Index)
     Case Else
+        ' Valid JSON text can also be simply a Name see ref:
         ' Error: Invalid JSON string
         Err.Raise 10001, "JSONConverter", json_ParseErrorMessage(JsonString, json_Index, "Expecting '{' or '['")
     End Select
@@ -451,7 +452,6 @@ Private Function json_ParseObject(json_String As String, ByRef json_Index As Lon
         Err.Raise 10001, "JSONConverter", json_ParseErrorMessage(json_String, json_Index, "Expecting '{'")
     Else
         json_Index = json_Index + 1
-
         Do
             json_SkipSpaces json_String, json_Index
             If VBA.Mid$(json_String, json_Index, 1) = "}" Then
@@ -469,6 +469,12 @@ Private Function json_ParseObject(json_String As String, ByRef json_Index As Lon
             Else
                 json_ParseObject.Item(json_Key) = json_ParseValue(json_String, json_Index)
             End If
+#If DEBUGENABLED Then
+    Debug.Print json_Index
+    If json_Index >= CLng(26916) Then
+        Debug.Print " erroring just after Here for https://jsonplaceholder.typicode.com/posts"
+    End If
+#End If
         Loop
     End If
 End Function

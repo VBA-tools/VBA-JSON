@@ -122,11 +122,11 @@ Public Function Specs() As SpecSuite
     
     With Specs.It("should parse double-backslash as backslash")
         ' Checks https://code.google.com/p/vba-json/issues/detail?id=11
-        JsonString = "[""C:\\folder\\picture.jpg""]"
+        JsonString = "[""C:\\Directory\\picture.jpg""]"
         Set JSONObject = JsonConverter.ParseJson(JsonString)
         
         .Expect(JSONObject).ToNotBeUndefined
-        .Expect(JSONObject(1)).ToEqual "C:\folder\picture.jpg"
+        .Expect(JSONObject(1)).ToEqual "C:\Directory\picture.jpg"
     End With
     
     With Specs.It("should allow keys and values with colons")
