@@ -17,7 +17,6 @@ Option Explicit
          'person’s official duties.
          '...
 Private mlngCurrentDupSheetCount As Long
-Private mfNewSheetOnNestedArrayFragment As Boolean
 Private objParsedJson As Variant
 Private Enum uriType
     uriFile = 1
@@ -69,10 +68,10 @@ Dim uriFileType As uriType: uriFileType = mCheckPath(strUrl)
             strDesinationWorkbookFileName = RemoveForbiddenFilenameCharacters(strDesinationWorkbookFileName)
             strJsonSourceFilePath = DownloadUriFileToTemp(strUrl, "json", strJsonArchiveDirectory)
         Case uriDirectory
-            MsgBox "Only http(s) url or existing Files are supported", vbOKOnly, "Transform Json File From Web"
+            MsgBox "Input is a directory, only JSON http(s) url or filepath are supported", vbOKOnly, "Transform Json File From Web"
             Exit Sub
         Case uriUndefined
-            MsgBox "Only http(s) url or existing Files are supported", vbOKOnly, "Transform Json File From Web"
+            MsgBox "Only JSON http(s) url or filepath are supported", vbOKOnly, "Transform Json File From Web"
             Exit Sub
     End Select
     mlngCurrentDupSheetCount = 1
@@ -134,7 +133,6 @@ Dim Parsed As Dictionary
         Case "String"
             wsh.Name = "JSON_name"
     End Select
-        
     '----------------------------------------------
     GetAllJsonObjectNestedValues jsonData, wkb, wsh, wsh.Name, fNewSheetOnNestedArrayFragment
     '----------------------------------------------
@@ -181,7 +179,6 @@ As Variant
                 Dim varDataRow As Variant
                 varDataRow = 1
                 Dim lngItem As Long
-                'mCreateWorkSheet(strPreviousObjectKey,wkb)
                 For lngItem = 0 To objJson.Count - 1
                     Dim varKey As Variant
                     Dim strKeyName As String
@@ -189,51 +186,40 @@ As Variant
                     'Dim sheetName As String
                     varKey = objJson.Keys()(lngItem)
                     strKeyName = CStr(varKey)
+                    Dim sheetName As String
+                    If Len(strPreviousObjectKey) = 0 Then
+                        sheetName = Left(varKey, 28)
+                    Else
+                        sheetName = Left(strPreviousObjectKey & "_" & varKey, 28)
+                    End If
                     'Obect item is an object...
                     If IsObject(objJson.Items()(lngItem)) Then
-                        Dim sheetName As String
-                        If Len(strPreviousObjectKey) = 0 Then
-                            sheetName = Left(varKey, 28)
-                        Else
-                            sheetName = Left(strPreviousObjectKey & "_" & varKey, 28)
-                        End If
                         varItem = "-------------------Object-------------------"
-                        Dim tmpDictionary As Dictionary
                         Dim objRecursive As Variant
-                        Select Case TypeName(objJson.Items()(lngItem))
+                        Dim objItem As Variant
+                        Set objItem = objJson.Items()(lngItem)
+                        Select Case TypeName(objItem)
                             Case "Dictionary"
-                                Dim objItemDictionary As Dictionary
-                                Set objItemDictionary = objJson.Items()(lngItem)
+                                Dim wshDictionary As Worksheet 'If fNewSheetOnNestedArrayFragment Then
+                                Set wshDictionary = mCreateWorkSheet(strPreviousObjectKey, wkb)
+                                'End If
                                 objRecursive = GetAllJsonObjectNestedValues( _
-                                    objItemDictionary, _
+                                    objItem, _
                                     wkb, _
-                                    mCreateWorkSheet(sheetName, wkb), _
-                                    strKeyName, _
-                                    fNewSheetOnNestedArrayFragment)
+                                    wshDictionary, _
+                                    strKeyName)
                             Case "Collection"
-                                Dim objItem As Variant
-                                Set objItem = objJson.Items()(lngItem)
-                                Select Case TypeName(objItem)
-                                    Case "Dictionary"
-                                        Set tmpDictionary = objItem
-                                        objRecursive = GetAllJsonObjectNestedValues( _
-                                            objItem, _
-                                            wkb, _
-                                            mCreateWorkSheet(sheetName, wkb), _
-                                            strKeyName, _
-                                            fNewSheetOnNestedArrayFragment)
-                                    Case "Collection"
-                                        mWriteCollectionToSheet _
-                                            objItem, _
-                                            wkb, _
-                                            sheetName, _
-                                            strKeyName, _
-                                            objRecursive, _
-                                            wsh, _
-                                            varKey, _
-                                            lngItem, _
-                                            fNewSheetOnNestedArrayFragment
-                                End Select
+                                Dim wshCollection As Worksheet 'If fNewSheetOnNestedArrayFragment Then
+                                Set wshCollection = mCreateWorkSheet(strPreviousObjectKey, wkb)
+                                    mWriteCollectionToSheet _
+                                        objItem, _
+                                        wkb, _
+                                        sheetName, _
+                                        strKeyName, _
+                                        objRecursive, _
+                                        wsh, _
+                                        varKey, _
+                                        lngItem
                             Case Else
                                 varItem = objJson.Items()(lngItem)
                                 mWriteElementToTable _
@@ -257,7 +243,6 @@ As Variant
                 Next lngItem
             End If
         Case "Collection"
-                mfNewSheetOnNestedArrayFragment = fNewSheetOnNestedArrayFragment
                 mWriteCollectionToSheet _
                     objJson, _
                     wkb, _
@@ -266,12 +251,11 @@ As Variant
                     objJson, _
                     wsh, _
                     "Json_array", _
-                    1, _
-                    False
+                    1
         Case Else 'must be a Number, String, Boolean, or null,
-        'we can't get here currently as the JSON converter doesn't handle JSON text that does not
-        'begin with a dictionary or collection (object or array), this is contrary to the spec and should be corrected
-            varItem = objJson.Items()(1)
+        'we can't get here currently as the JSON converter doesn't appear to handle JSON text that does not
+        'begin with a dictionary or collection (object or array), this appears to be contrary to the spec and should be corrected
+            varItem = objJson.Items()(0)
             mWriteElementToTable _
                 varItem, _
                 wsh, _
@@ -300,23 +284,15 @@ Private Sub mWriteCollectionToSheet( _
     ByRef objRecursive As Variant, _
     ByRef wsh As Worksheet, _
     ByRef varKey As Variant, _
-    ByRef lngItem As Long, _
-    ByRef fNewSheetOnNestedArrayFragment As Boolean _
+    ByRef lngItem As Long _
 )
 Dim objItemElement As Variant
 Dim lngItemElementCounter As Long
-Dim tmpDictionary As Variant
     lngItemElementCounter = 0
     For Each objItemElement In objItem
         lngItemElementCounter = lngItemElementCounter + 1
         If TypeName(objItemElement) = "Dictionary" Then
-            Set tmpDictionary = objItemElement
-            'sometimes we need to create a worksheet, some times we don't need to review the JSON spec...
-            If fNewSheetOnNestedArrayFragment Then
-                objRecursive = GetAllJsonObjectNestedValues(tmpDictionary, wkb, mCreateWorkSheet(strNewSheetName, wkb), strKeyName, mfNewSheetOnNestedArrayFragment)
-            Else
-                objRecursive = GetAllJsonObjectNestedValues(tmpDictionary, wkb, wsh, strKeyName, mfNewSheetOnNestedArrayFragment)
-            End If
+            objRecursive = GetAllJsonObjectNestedValues(objItemElement, wkb, wsh, strKeyName)
         Else
             wsh.Activate
             If lngItemElementCounter = 1 Then 'Add Column Header
