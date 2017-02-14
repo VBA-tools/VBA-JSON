@@ -343,9 +343,9 @@ Private Function mCheckPath(ByVal path) As uriType
             retval = uriFile
         Case mFileExists(GetRelativePathViaParent(path))
             retval = uriFile
-        Case mDirectoryExists(path)
+        Case mFolderExists(path)
             retval = uriDirectory
-        Case mDirectoryExists(GetRelativePathViaParent(path))
+        Case mFolderExists(GetRelativePathViaParent(path))
             retval = uriDirectory
         Case Else
             retval = uriUndefined
@@ -376,9 +376,9 @@ Private Function mFileExists(ByVal strFile As String, Optional bFindDirectories 
     mFileExists = (Len(Dir(strFile, lngAttributes)) > 0)
 End Function
 
-Private Function mDirectoryExists(ByVal strPath As String) As Boolean
+Private Function mFolderExists(ByVal strPath As String) As Boolean
     On Error Resume Next
-    mDirectoryExists = ((GetAttr(strPath) And vbDirectory) = vbDirectory)
+    mFolderExists = ((GetAttr(strPath) And vbDirectory) = vbDirectory)
 End Function
 
 Private Function mHttpExists(ByVal sURL As String) As Boolean

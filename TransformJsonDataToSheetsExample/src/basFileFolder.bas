@@ -70,7 +70,7 @@ Public Function DeleteFile(strPath As String) As Boolean
     On Error Resume Next
     Dim fso As Object ' As Scripting.FileSystemObject
     Set fso = CreateObject("Scripting.FileSystemObject") ' New Scripting.FileSystemObject
-    If fso.mFileExists(strPath) Then
+    If fso.FileExists(strPath) Then
         fso.DeleteFile strPath
     End If
     DeleteFile = Err.Number = 0
@@ -94,8 +94,8 @@ Public Function BuildDir(strPath) As Boolean
     End If
     For intDir = 0 To UBound(arryPaths)
         strBuiltPath = strBuiltPath & arryPaths(intDir)
-        If Not fso.DirectoryExists(strBuiltPath) Then
-            fso.CreateDirectory strBuiltPath
+        If Not fso.FolderExists(strBuiltPath) Then
+            fso.CreateFolder strBuiltPath
         End If
         strBuiltPath = strBuiltPath & "\"
     Next

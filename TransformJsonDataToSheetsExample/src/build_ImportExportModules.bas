@@ -86,7 +86,7 @@ Private Sub mImportVbComponent(strDirectoriesource)
     Dim fil As Object, fso As Object
     Set fso = CreateObject("Scripting.FileSystemObject")
     mSetThisVbeProject
-    If fso.DirectoryExists(strDirectoriesource) Then
+    If fso.FolderExists(strDirectoriesource) Then
         For Each fil In fso.GetDirectory(strDirectoriesource).Files
             Dim strExtension As String: strExtension = LCase(mGetFileExtension(fil.Name))
             If strExtension = "cl" Or strExtension = "bas" Or Len(strExtension) = 0 Then
@@ -141,15 +141,15 @@ Private Function BuildDir(strPath) As Boolean
     End If
     For intDir = 0 To UBound(arryPaths)
         strBuiltPath = strBuiltPath & arryPaths(intDir)
-        If Not fso.DirectoryExists(strBuiltPath) Then
-            fso.CreateDirectory strBuiltPath
+        If Not fso.FolderExists(strBuiltPath) Then
+            fso.CreateFolder strBuiltPath
         End If
         strBuiltPath = strBuiltPath & "\"
     Next
     BuildDir = (Err.Number = 0) 'True if no errors
 End Function
 
-Public Function GetRelativePathViaParent(Optional ByVal strPath As String, Optional fCreateDirectory As Boolean = True)
+Public Function GetRelativePathViaParent(Optional ByVal strPath As String, Optional fCreateFolder As Boolean = True)
 'Usage for up 2 dirs is GetRelativePathViaParent("..\..\Destination")
     Dim strVal As String
     If Left(strPath, 2) = "\\" Or Mid(strPath, 2, 1) = ":" Then 'we have a full path and can't use relative path
@@ -178,7 +178,7 @@ Public Function GetRelativePathViaParent(Optional ByVal strPath As String, Optio
             strVal = strVal & "\" & aryParentPath(UBound(aryParentPath))
         End If
     End If
-    If fCreateDirectory Then
+    If fCreateFolder Then
         BuildDir strVal
     End If
     GetRelativePathViaParent = strVal
