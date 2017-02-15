@@ -5,6 +5,8 @@
 _scratch
 .DS_Store
 
- # Untracked files:
+# Untracked files:
 *exclude*
  
+# Directories to ignore
+/TransformJsonDataToSheetsExample/Archive
