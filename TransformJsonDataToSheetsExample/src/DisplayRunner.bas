@@ -37,6 +37,7 @@ Public Property Get OutputStartRow() As Integer
     
     OutputStartRow = pOutputStartRow
 End Property
+
 Public Property Let OutputStartRow(value As Integer)
     pOutputStartRow = value
 End Property
@@ -95,6 +96,7 @@ Public Property Get Sheet() As Worksheet
     End If
     Set Sheet = pSheet
 End Property
+
 Public Property Set Sheet(value As Worksheet)
     Set pSheet = value
 End Property
@@ -102,10 +104,10 @@ End Property
 Public Property Get WBPath() As String
     WBPath = Filename.value
 End Property
+
 Public Property Let WBPath(value As String)
     Filename.value = value
 End Property
-
 
 ' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ '
 ' Methods
@@ -262,6 +264,3 @@ Private Function SheetExists(sheetName As String) As Boolean
         End If
     Next Sheet
 End Function
-    
-
-
