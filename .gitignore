@@ -9,4 +9,4 @@ _scratch
 *exclude*
  
 # Directories to ignore
-/TransformJsonDataToSheetsExample/Archive
+/TransformJsonDataToSheetsExample/[Aa]rchive
