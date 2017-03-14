@@ -48,10 +48,31 @@ Option Explicit
 ' === VBA-UTC Headers
 #If Mac Then
 
-Private Declare Function utc_popen Lib "libc.dylib" Alias "popen" (ByVal utc_Command As String, ByVal utc_Mode As String) As Long
-Private Declare Function utc_pclose Lib "libc.dylib" Alias "pclose" (ByVal utc_File As Long) As Long
-Private Declare Function utc_fread Lib "libc.dylib" Alias "fread" (ByVal utc_Buffer As String, ByVal utc_Size As Long, ByVal utc_Number As Long, ByVal utc_File As Long) As Long
-Private Declare Function utc_feof Lib "libc.dylib" Alias "feof" (ByVal utc_File As Long) As Long
+#If VBA7 Then
+
+' 64-bit Mac (2016)
+Private Declare PtrSafe Function utc_popen Lib "libc.dylib" Alias "popen" _
+    (ByVal utc_Command As String, ByVal utc_Mode As String) As LongPtr
+Private Declare PtrSafe Function utc_pclose Lib "libc.dylib" Alias "pclose" _
+    (ByVal utc_File As Long) As LongPtr
+Private Declare PtrSafe Function utc_fread Lib "libc.dylib" Alias "fread" _
+    (ByVal utc_Buffer As String, ByVal utc_Size As LongPtr, ByVal utc_Number As LongPtr, ByVal utc_File As LongPtr) As LongPtr
+Private Declare PtrSafe Function utc_feof Lib "libc.dylib" Alias "feof" _
+    (ByVal utc_File As LongPtr) As LongPtr
+
+#Else
+
+' 32-bit Mac
+Private Declare Function utc_popen Lib "libc.dylib" Alias "popen" _
+    (ByVal utc_Command As String, ByVal utc_Mode As String) As Long
+Private Declare Function utc_pclose Lib "libc.dylib" Alias "pclose" _
+    (ByVal utc_File As Long) As Long
+Private Declare Function utc_fread Lib "libc.dylib" Alias "fread" _
+    (ByVal utc_Buffer As String, ByVal utc_Size As Long, ByVal utc_Number As Long, ByVal utc_File As Long) As Long
+Private Declare Function utc_feof Lib "libc.dylib" Alias "feof" _
+    (ByVal utc_File As Long) As Long
+
+#End If
 
 #ElseIf VBA7 Then
 
@@ -78,10 +99,20 @@ Private Declare Function utc_TzSpecificLocalTimeToSystemTime Lib "kernel32" Alia
 
 #If Mac Then
 
+#If VBA7 Then
+Private Type utc_ShellResult
+    utc_Output As String
+    utc_ExitCode As LongPtr
+End Type
+
+#Else
+
 Private Type utc_ShellResult
     utc_Output As String
     utc_ExitCode As Long
 End Type
+
+#End If
 
 #Else
 
@@ -877,7 +908,7 @@ Private Function json_UnsignedAdd(json_Start As Long, json_Increment As Long) As
 End Function
 
 ''
-' VBA-UTC v1.0.2
+' VBA-UTC v1.0.3
 ' (c) Tim Hall - https://github.com/VBA-tools/VBA-UtcConverter
 '
 ' UTC/ISO 8601 Converter for VBA
@@ -1092,9 +1123,15 @@ Private Function utc_ConvertDate(utc_Value As Date, Optional utc_ConvertToUtc As
 End Function
 
 Private Function utc_ExecuteInShell(utc_ShellCommand As String) As utc_ShellResult
+#If VBA7 Then
+    Dim utc_File As LongPtr
+    Dim utc_Read As LongPtr
+#Else
     Dim utc_File As Long
-    Dim utc_Chunk As String
     Dim utc_Read As Long
+#End If
+
+    Dim utc_Chunk As String
 
     On Error GoTo utc_ErrorHandling
     utc_File = utc_popen(utc_ShellCommand, "r")
