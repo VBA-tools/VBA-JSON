@@ -54,7 +54,7 @@ Option Explicit
 Private Declare PtrSafe Function utc_popen Lib "libc.dylib" Alias "popen" _
     (ByVal utc_Command As String, ByVal utc_Mode As String) As LongPtr
 Private Declare PtrSafe Function utc_pclose Lib "libc.dylib" Alias "pclose" _
-    (ByVal utc_File As Long) As LongPtr
+    (ByVal utc_File As LongPtr) As LongPtr
 Private Declare PtrSafe Function utc_fread Lib "libc.dylib" Alias "fread" _
     (ByVal utc_Buffer As String, ByVal utc_Size As LongPtr, ByVal utc_Number As LongPtr, ByVal utc_File As LongPtr) As LongPtr
 Private Declare PtrSafe Function utc_feof Lib "libc.dylib" Alias "feof" _
@@ -908,7 +908,7 @@ Private Function json_UnsignedAdd(json_Start As Long, json_Increment As Long) As
 End Function
 
 ''
-' VBA-UTC v1.0.3
+' VBA-UTC v1.0.5
 ' (c) Tim Hall - https://github.com/VBA-tools/VBA-UtcConverter
 '
 ' UTC/ISO 8601 Converter for VBA
@@ -1056,7 +1056,7 @@ Public Function ParseIso(utc_IsoString As String) As Date
         ParseIso = ParseUtc(ParseIso)
 
         If utc_HasOffset Then
-            ParseIso = ParseIso + utc_Offset
+            ParseIso = ParseIso - utc_Offset
         End If
     End If
 
@@ -1140,15 +1140,15 @@ Private Function utc_ExecuteInShell(utc_ShellCommand As String) As utc_ShellResu
 
     Do While utc_feof(utc_File) = 0
         utc_Chunk = VBA.Space$(50)
-        utc_Read = utc_fread(utc_Chunk, 1, Len(utc_Chunk) - 1, utc_File)
+        utc_Read = CLng(utc_fread(utc_Chunk, 1, Len(utc_Chunk) - 1, utc_File))
         If utc_Read > 0 Then
-            utc_Chunk = VBA.Left$(utc_Chunk, utc_Read)
+            utc_Chunk = VBA.Left$(utc_Chunk, CLng(utc_Read))
             utc_ExecuteInShell.utc_Output = utc_ExecuteInShell.utc_Output & utc_Chunk
         End If
     Loop
 
 utc_ErrorHandling:
-    utc_ExecuteInShell.utc_ExitCode = utc_pclose(utc_File)
+    utc_ExecuteInShell.utc_ExitCode = CLng(utc_pclose(utc_File))
 End Function
 
 #Else
