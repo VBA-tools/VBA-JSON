@@ -11,7 +11,7 @@ Attribute VB_Name = "DisplayRunner"
 '
 ' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ '
 
-Private Const DefaultSheetName As String = "Spec Runner"
+Private Const DefaultSheetName As String = "Tool_Spec_Runner"
 Private Const DefaultFilenameRangeName As String = "Filename"
 Private Const DefaultOutputStartRow As Integer = 6
 Private Const DefaultIdCol As Integer = 1

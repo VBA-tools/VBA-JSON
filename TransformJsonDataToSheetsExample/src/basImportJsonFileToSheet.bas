@@ -88,8 +88,9 @@ Dim uriFileType As uriType: uriFileType = mCheckPath(strUrl)
     End If
 ExitHere:
     Application.ScreenUpdating = True
+    'Delete our temp JSON file if we are done with it
 End Sub
-    
+
 Sub ExpandJsonToNewWorkbook( _
     ByRef strJsonFilePath As String, _
     Optional ByRef strJSONObjectNameWithData As String, _

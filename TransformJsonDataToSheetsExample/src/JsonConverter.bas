@@ -1,7 +1,6 @@
 Attribute VB_Name = "JsonConverter"
-'Attribute VB_Name = "JsonConverter"
 ''
-' VBA-JSON v2.2.2
+' VBA-JSON v2.2.4
 ' (c) Tim Hall - https://github.com/VBA-tools/VBA-JSON
 '
 ' JSON Converter for VBA
@@ -49,10 +48,31 @@ Option Explicit
 ' === VBA-UTC Headers
 #If Mac Then
 
-Private Declare Function utc_popen Lib "libc.dylib" Alias "popen" (ByVal utc_Command As String, ByVal utc_Mode As String) As Long
-Private Declare Function utc_pclose Lib "libc.dylib" Alias "pclose" (ByVal utc_File As Long) As Long
-Private Declare Function utc_fread Lib "libc.dylib" Alias "fread" (ByVal utc_Buffer As String, ByVal utc_Size As Long, ByVal utc_Number As Long, ByVal utc_File As Long) As Long
-Private Declare Function utc_feof Lib "libc.dylib" Alias "feof" (ByVal utc_File As Long) As Long
+#If VBA7 Then
+
+' 64-bit Mac (2016)
+Private Declare PtrSafe Function utc_popen Lib "libc.dylib" Alias "popen" _
+    (ByVal utc_Command As String, ByVal utc_Mode As String) As LongPtr
+Private Declare PtrSafe Function utc_pclose Lib "libc.dylib" Alias "pclose" _
+    (ByVal utc_File As LongPtr) As LongPtr
+Private Declare PtrSafe Function utc_fread Lib "libc.dylib" Alias "fread" _
+    (ByVal utc_Buffer As String, ByVal utc_Size As LongPtr, ByVal utc_Number As LongPtr, ByVal utc_File As LongPtr) As LongPtr
+Private Declare PtrSafe Function utc_feof Lib "libc.dylib" Alias "feof" _
+    (ByVal utc_File As LongPtr) As LongPtr
+
+#Else
+
+' 32-bit Mac
+Private Declare Function utc_popen Lib "libc.dylib" Alias "popen" _
+    (ByVal utc_Command As String, ByVal utc_Mode As String) As Long
+Private Declare Function utc_pclose Lib "libc.dylib" Alias "pclose" _
+    (ByVal utc_File As Long) As Long
+Private Declare Function utc_fread Lib "libc.dylib" Alias "fread" _
+    (ByVal utc_Buffer As String, ByVal utc_Size As Long, ByVal utc_Number As Long, ByVal utc_File As Long) As Long
+Private Declare Function utc_feof Lib "libc.dylib" Alias "feof" _
+    (ByVal utc_File As Long) As Long
+
+#End If
 
 #ElseIf VBA7 Then
 
@@ -79,10 +99,20 @@ Private Declare Function utc_TzSpecificLocalTimeToSystemTime Lib "kernel32" Alia
 
 #If Mac Then
 
+#If VBA7 Then
+Private Type utc_ShellResult
+    utc_Output As String
+    utc_ExitCode As LongPtr
+End Type
+
+#Else
+
 Private Type utc_ShellResult
     utc_Output As String
     utc_ExitCode As Long
 End Type
+
+#End If
 
 #Else
 
@@ -166,7 +196,6 @@ Public Function ParseJson(ByVal JsonString As String) As Object
     Case "["
         Set ParseJson = json_ParseArray(JsonString, json_Index)
     Case Else
-        ' Valid JSON text can also be simply a Name see ref:
         ' Error: Invalid JSON string
         Err.Raise 10001, "JSONConverter", json_ParseErrorMessage(JsonString, json_Index, "Expecting '{' or '['")
     End Select
@@ -452,6 +481,7 @@ Private Function json_ParseObject(json_String As String, ByRef json_Index As Lon
         Err.Raise 10001, "JSONConverter", json_ParseErrorMessage(json_String, json_Index, "Expecting '{'")
     Else
         json_Index = json_Index + 1
+
         Do
             json_SkipSpaces json_String, json_Index
             If VBA.Mid$(json_String, json_Index, 1) = "}" Then
@@ -469,12 +499,15 @@ Private Function json_ParseObject(json_String As String, ByRef json_Index As Lon
             Else
                 json_ParseObject.Item(json_Key) = json_ParseValue(json_String, json_Index)
             End If
+            
+'seakintruth issues
 #If DEBUGENABLED Then
     Debug.Print json_Index
     If json_Index >= CLng(26916) Then
         Debug.Print " erroring just after Here for https://jsonplaceholder.typicode.com/posts"
     End If
 #End If
+            
         Loop
     End If
 End Function
@@ -884,7 +917,7 @@ Private Function json_UnsignedAdd(json_Start As Long, json_Increment As Long) As
 End Function
 
 ''
-' VBA-UTC v1.0.2
+' VBA-UTC v1.0.5
 ' (c) Tim Hall - https://github.com/VBA-tools/VBA-UtcConverter
 '
 ' UTC/ISO 8601 Converter for VBA
@@ -1032,7 +1065,7 @@ Public Function ParseIso(utc_IsoString As String) As Date
         ParseIso = ParseUtc(ParseIso)
 
         If utc_HasOffset Then
-            ParseIso = ParseIso + utc_Offset
+            ParseIso = ParseIso - utc_Offset
         End If
     End If
 
@@ -1099,9 +1132,15 @@ Private Function utc_ConvertDate(utc_Value As Date, Optional utc_ConvertToUtc As
 End Function
 
 Private Function utc_ExecuteInShell(utc_ShellCommand As String) As utc_ShellResult
+#If VBA7 Then
+    Dim utc_File As LongPtr
+    Dim utc_Read As LongPtr
+#Else
     Dim utc_File As Long
-    Dim utc_Chunk As String
     Dim utc_Read As Long
+#End If
+
+    Dim utc_Chunk As String
 
     On Error GoTo utc_ErrorHandling
     utc_File = utc_popen(utc_ShellCommand, "r")
@@ -1110,21 +1149,21 @@ Private Function utc_ExecuteInShell(utc_ShellCommand As String) As utc_ShellResu
 
     Do While utc_feof(utc_File) = 0
         utc_Chunk = VBA.Space$(50)
-        utc_Read = utc_fread(utc_Chunk, 1, Len(utc_Chunk) - 1, utc_File)
+        utc_Read = CLng(utc_fread(utc_Chunk, 1, Len(utc_Chunk) - 1, utc_File))
         If utc_Read > 0 Then
-            utc_Chunk = VBA.Left$(utc_Chunk, utc_Read)
+            utc_Chunk = VBA.Left$(utc_Chunk, CLng(utc_Read))
             utc_ExecuteInShell.utc_Output = utc_ExecuteInShell.utc_Output & utc_Chunk
         End If
     Loop
 
 utc_ErrorHandling:
-    utc_ExecuteInShell.utc_ExitCode = utc_pclose(utc_File)
+    utc_ExecuteInShell.utc_ExitCode = CLng(utc_pclose(utc_File))
 End Function
 
 #Else
 
 Private Function utc_DateToSystemTime(utc_Value As Date) As utc_SYSTEMTIME
-    utc_DateToSystemTime.utc_wYear = VBA.year(utc_Value)
+    utc_DateToSystemTime.utc_wYear = VBA.Year(utc_Value)
     utc_DateToSystemTime.utc_wMonth = VBA.Month(utc_Value)
     utc_DateToSystemTime.utc_wDay = VBA.Day(utc_Value)
     utc_DateToSystemTime.utc_wHour = VBA.Hour(utc_Value)
@@ -1139,5 +1178,4 @@ Private Function utc_SystemTimeToDate(utc_Value As utc_SYSTEMTIME) As Date
 End Function
 
 #End If
-
 
