@@ -499,15 +499,6 @@ Private Function json_ParseObject(json_String As String, ByRef json_Index As Lon
             Else
                 json_ParseObject.Item(json_Key) = json_ParseValue(json_String, json_Index)
             End If
-            
-'seakintruth issues
-#If DEBUGENABLED Then
-    Debug.Print json_Index
-    If json_Index >= CLng(26916) Then
-        Debug.Print " erroring just after Here for https://jsonplaceholder.typicode.com/posts"
-    End If
-#End If
-            
         Loop
     End If
 End Function
