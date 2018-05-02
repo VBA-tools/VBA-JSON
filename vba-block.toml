@@ -1,0 +1,10 @@
+[package]
+name = "json"
+version = "2.2.3"
+authors = ["Tim Hall <tim.hall.engr@gmail.com> (https://github.com/timhall)"]
+
+[src]
+JsonConverter = "JsonConverter.bas"
+
+[dependencies]
+dictionary = "^1"
