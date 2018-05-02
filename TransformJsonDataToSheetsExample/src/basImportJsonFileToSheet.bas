@@ -23,6 +23,7 @@ Private Enum uriType
     uriDirectory = 2
     uriHttp = 3
     uriUndefined = 4
+    uriParentDirectoryExists = 5
 End Enum
 
 Public Sub ImportJsonFileToWorksheet( _
@@ -39,7 +40,8 @@ Public Sub ImportJsonFileToWorksheet( _
 On Error GoTo ExitHere
 'Use when the data posted to the web is only updated daily, we check to see if we have data for that day and only proceed after asking
 Application.ScreenUpdating = False
-'We expect either a http url or a file, TODO add support for FTP
+'We expect either a http url or a file,
+'TODO add support for FTP?
 Dim strDesinationWorkbookFileName As String
 Dim strJsonSourceFilePath As String
 Dim uriFileType As uriType: uriFileType = mCheckPath(strUrl)
@@ -54,7 +56,7 @@ Dim uriFileType As uriType: uriFileType = mCheckPath(strUrl)
             If fAppendDateStampToExcelFilename Then
                 strDesinationWorkbookFileName = strDesinationWorkbookFileName & Format(Now(), "yymmddhhss") & Right(Timer, 2)
             End If
-            strDesinationWorkbookFileName = RemoveForbiddenFilenameCharacters(strDesinationWorkbookFileName)
+            strDesinationWorkbookFileName = RemoveForbiddenFilenameCharacters(Replace(strDesinationWorkbookFileName, ".", "_"))
             strJsonSourceFilePath = GetRelativePathViaParent(strUrl)
         Case uriHttp
             If Len(strFileNamePrefix) > 0 Then
@@ -65,10 +67,13 @@ Dim uriFileType As uriType: uriFileType = mCheckPath(strUrl)
             If fAppendDateStampToExcelFilename Then
                 strDesinationWorkbookFileName = strDesinationWorkbookFileName & Format(Now(), "yymmddhhss") & Right(Timer, 2)
             End If
-            strDesinationWorkbookFileName = RemoveForbiddenFilenameCharacters(strDesinationWorkbookFileName)
+            strDesinationWorkbookFileName = RemoveForbiddenFilenameCharacters(Replace(strDesinationWorkbookFileName, ".", "_"))
             strJsonSourceFilePath = DownloadUriFileToTemp(strUrl, "json", strJsonArchiveDirectory)
         Case uriDirectory
-            MsgBox "Input is a directory, only JSON http(s) url or filepath are supported", vbOKOnly, "Transform Json File From Web"
+            MsgBox "Input is a directory, only JSON http(s) url or direct filepath are supported", vbOKOnly, "Transform Json File From Web"
+            Exit Sub
+        Case uriParentDirectoryExists
+            MsgBox "Unable to find file: " & strJSONObjectNameWithData & vbCrLf & " The files Parent Directory does exist", vbOKOnly, "Transform Json File From Web"
             Exit Sub
         Case uriUndefined
             MsgBox "Only JSON http(s) url or filepath are supported", vbOKOnly, "Transform Json File From Web"
@@ -346,7 +351,7 @@ Private Function mCheckPath(ByVal path) As uriType
         Case mFolderExists(path)
             retval = uriDirectory
         Case mFolderExists(GetRelativePathViaParent(path))
-            retval = uriDirectory
+            retval = uriParentDirectoryExists
         Case Else
             retval = uriUndefined
     End Select
@@ -373,7 +378,7 @@ Private Function mFileExists(ByVal strFile As String, Optional bFindDirectories 
     End If
     'If Dir() returns something, the file exists.
     On Error Resume Next
-    mFileExists = (Len(Dir(strFile, lngAttributes)) > 0)
+    mFileExists = (Len(dir(strFile, lngAttributes)) > 0)
 End Function
 
 Private Function mFolderExists(ByVal strPath As String) As Boolean

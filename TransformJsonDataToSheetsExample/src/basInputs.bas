@@ -1,22 +1,37 @@
 Attribute VB_Name = "basInputs"
 Option Explicit
+'Authored 2015-2018 by Jeremy Dean Gerdes <jeremy.gerdes@navy.mil>
+     'Public Domain in the United States of America,
+     'any international rights are waived through the CC0 1.0 Universal public domain dedication <https://creativecommons.org/publicdomain/zero/1.0/legalcode>
+     'http://www.copyright.gov/title17/
+     'In accrordance with 17 U.S.C. § 105 This work is 'noncopyright' or in the 'public domain'
+         'Subject matter of copyright: United States Government works
+         'protection under this title is not available for
+         'any work of the United States Government, but the United States
+         'Government is not precluded from receiving and holding copyrights
+         'transferred to it by assignment, bequest, or otherwise.
+     'as defined by 17 U.S.C § 101
+         '...
+         'A “work of the United States Government” is a work prepared by an
+         'officer or employee of the United States Government as part of that
+         'person’s official duties.
+         '...
 
 Public Sub TransformJsonFile_Click()
 On Error GoTo HandleError
     '----------------------------------
-    Dim strUrl As String, strJsonObjectWithData As String, strArchiveDirectory As String, strDestinationDirectory As String, strFileNamePrefix As String
-    strJsonObjectWithData = mGetNamedRangeInput("Json_Data_Ojbect_Name")
-    strArchiveDirectory = mGetNamedRangeInput("JSON_Archive_Directory")
-    strDestinationDirectory = mGetNamedRangeInput("Destination_Directory")
-    strFileNamePrefix = mGetNamedRangeInput("FileNamePrefix")
+    Dim strUrl As String, strArchiveDirectory As String, strDestinationDirectory As String, strFileNamePrefix As String
+    strArchiveDirectory = GetNamedRangeInput("JSON_Archive_Directory")
+    strDestinationDirectory = GetNamedRangeInput("Destination_Directory")
+    strFileNamePrefix = GetNamedRangeInput("FileNamePrefix")
     '----------------------------------
     Dim fCloseWorkBook As Boolean, fDelteJsonArchiveFile As Boolean, fAppendDateStampToExcelFilename As Boolean, fNewSheetOnNestedArrayFragment As Boolean
-    fCloseWorkBook = mGetNamedRangeInput("chkCloseFileAfterTransform")
-    fDelteJsonArchiveFile = mGetNamedRangeInput("chkDeleteJsonFileArchiveDirectory")
-    fAppendDateStampToExcelFilename = mGetNamedRangeInput("chkAppendDateStampToExcelFilename")
-    fNewSheetOnNestedArrayFragment = mGetNamedRangeInput("chkCreateNewSheetOnNestedFragment")
+    fCloseWorkBook = GetNamedRangeInput("chkCloseFileAfterTransform")
+    fDelteJsonArchiveFile = GetNamedRangeInput("chkDeleteJsonFileArchiveDirectory")
+    fAppendDateStampToExcelFilename = GetNamedRangeInput("chkAppendDateStampToExcelFilename")
+    fNewSheetOnNestedArrayFragment = GetNamedRangeInput("chkCreateNewSheetOnNestedFragment")
     '----------------------------------
-    If mGetNamedRange("fUseMultipleJsonInput").value Then
+    If GetNamedRange("fUseMultipleJsonInput").value Then
         Dim rngMultipleInput As Range
         Dim sht As Worksheet
         Set sht = ThisWorkbook.Worksheets("Multiple JSON Input")
@@ -54,7 +69,7 @@ On Error GoTo HandleError
             If Len(strUrl) > 0 Then
                 ImportJsonFileToWorksheet _
                     strUrl, _
-                    strJsonObjectWithData, _
+                    GetNamedRangeInput("Json_Data_Ojbect_Name"), _
                     strFileNamePrefix, _
                     strArchiveDirectory, _
                     strDestinationDirectory, _
@@ -64,11 +79,25 @@ On Error GoTo HandleError
                     fNewSheetOnNestedArrayFragment
             End If
         Next
+    ElseIf GetNamedRangeInput("JSON_FileUri") = True Then
+        'Crawl directory and Sub Directories for all .json files
+        Dim fso As Object: Set fso = CreateObject("system.FileSystemObject") 'New FileSystemObject
+        Dim objFolder As Object: Set objFolder = fso.GetFolder(GetNamedRange("JsonFileUrl").value)
+        CrawlAndProcessFolders _
+            objFolder, _
+            GetNamedRangeInput("Json_Data_Ojbect_Name"), _
+            strFileNamePrefix, _
+            strArchiveDirectory, _
+            strDestinationDirectory, _
+            fCloseWorkBook, _
+            fDelteJsonArchiveFile, _
+            fAppendDateStampToExcelFilename, _
+            fNewSheetOnNestedArrayFragment
     Else
-        strUrl = mGetNamedRangeInput("JSON_FileUri")
+        strUrl = GetNamedRangeInput("JSON_FileUri")
         ImportJsonFileToWorksheet _
             strUrl, _
-            strJsonObjectWithData, _
+            GetNamedRangeInput("Json_Data_Ojbect_Name"), _
             strFileNamePrefix, _
             strArchiveDirectory, _
             strDestinationDirectory, _
@@ -84,6 +113,47 @@ HandleError:
     MsgBox Err.Description, vbCritical, "Transform Json File Error" & Err.Number
 
     GoTo ExitHere
+End Sub
+
+Private Sub CrawlAndProcessFolders(objFolder As Object, _
+    Optional ByRef strJSONObjectNameWithData As String, _
+    Optional ByRef strFileNamePrefix As String, _
+    Optional ByRef strJsonArchiveDirectory As String, _
+    Optional ByRef strExcelFileSaveDirectory As String, _
+    Optional fCloseWorkBook As Boolean = False, _
+    Optional fDelteJsonArchiveFile As Boolean = False, _
+    Optional fAppendDateStampToExcelFilename As Boolean = True, _
+    Optional fNewSheetOnNestedArrayFragment As Boolean = False _
+)
+        Dim fso As Object: Set fso = CreateObject("system.FileSystemObject") 'New FileSystemObject
+        Dim objFile As Object
+        For Each objFile In objFolder.Files
+            If LCase(Right(objFile.path, 5)) = ".json" Then
+            ImportJsonFileToWorksheet _
+                objFile.path, _
+                GetNamedRangeInput("Json_Data_Ojbect_Name"), _
+                strFileNamePrefix, _
+                strArchiveDirectory, _
+                strDestinationDirectory, _
+                fCloseWorkBook, _
+                fDelteJsonArchiveFile, _
+                fAppendDateStampToExcelFilename, _
+                fNewSheetOnNestedArrayFragment
+            End If
+        Next
+        Dim objSubFolder As Object
+        For Each objSubFolder In objFolder.SubFolders
+            CrawlAndProcessFolders _
+                objSubFolder, _
+                GetNamedRangeInput("Json_Data_Ojbect_Name"), _
+                strFileNamePrefix, _
+                strArchiveDirectory, _
+                strDestinationDirectory, _
+                fCloseWorkBook, _
+                fDelteJsonArchiveFile, _
+                fAppendDateStampToExcelFilename, _
+                fNewSheetOnNestedArrayFragment
+        Next
 End Sub
 
 Private Function isSpecialCellValid(rng As Range, varSpecial As XlCellType) As Boolean
@@ -109,17 +179,17 @@ Dim rngTest As Range
     Set rngTest = Nothing
 End Function
 
-Private Function mGetNamedRangeInput(strNameIndex As String) As Variant
+Private Function GetNamedRangeInput(strNameIndex As String) As Variant
 Dim rngNamed As Range
-    Set rngNamed = mGetNamedRange(strNameIndex)
-    mGetNamedRangeInput = rngNamed.Offset(0, 1).Cells(1).value
+    Set rngNamed = GetNamedRange(strNameIndex)
+    GetNamedRangeInput = rngNamed.Offset(0, 1).Cells(1).value
 End Function
 
-Public Function mGetNamedRange(strNameIndex As String) As Range
+Public Function GetNamedRange(strNameIndex As String) As Range
 On Error GoTo HandleError
     Dim objNamedRanges As Names
     Set objNamedRanges = ThisWorkbook.Names
-    Set mGetNamedRange = objNamedRanges.Item(strNameIndex).RefersToRange
+    Set GetNamedRange = objNamedRanges.Item(strNameIndex).RefersToRange
 ExitHere:
     Exit Function
 HandleError:
@@ -130,12 +200,17 @@ End Function
 
 Sub chkUseMultiple_Click()
     With ActiveSheet.Range("B2").Interior
-        If mGetNamedRange("fUseMultipleJsonInput").value Then
+        If GetNamedRange("fUseMultipleJsonInput").value = True Then
             .Pattern = xlSolid
             .PatternColorIndex = xlAutomatic
             .ThemeColor = xlThemeColorLight1
+            GetNamedRange("CheckCrawlDirectoryLink").value = False
+            GetNamedRange("CheckCrawlDirectoryLink").Worksheet.Shapes("chkCrawlDirectories").Visible = False
         Else
             .Pattern = xlNone
+            GetNamedRange("CheckCrawlDirectoryLink").Worksheet.Shapes("chkCrawlDirectories").Visible = True
+            'Trigger Worksheet_Change code
+            GetNamedRange("JsonFileUrl").value = GetNamedRange("JsonFileUrl").value
         End If
         .TintAndShade = 0
         .PatternTintAndShade = 0

@@ -1,6 +1,6 @@
 Attribute VB_Name = "basFileFolder"
 Option Explicit
-'Authored 2015-2017 by Jeremy Dean Gerdes <jeremy.gerdes@navy.mil>
+'Authored 2015-2018 by Jeremy Dean Gerdes <jeremy.gerdes@navy.mil>
      'Public Domain in the United States of America,
      'any international rights are waived through the CC0 1.0 Universal public domain dedication <https://creativecommons.org/publicdomain/zero/1.0/legalcode>
      'http://www.copyright.gov/title17/
@@ -53,6 +53,7 @@ As String
     Dim strTempFilePath As String
     Dim strTargetDirectory As String
     strTempFilePath = Left(RemoveForbiddenFilenameCharacters(Right(strUrl, Len(strUrl) - InStrRev(strUrl, "/"))), 30)
+    strTempFilePath = Replace(strTempFilePath, ".", "_")
     If Len(strJsonArchiveDirectory) > 0 Then 'should be validating that the dir exists and we can write to it.
         strTargetDirectory = GetRelativePathViaParent(strJsonArchiveDirectory)
     Else
@@ -74,6 +75,16 @@ Public Function DeleteFile(strPath As String) As Boolean
         fso.DeleteFile strPath
     End If
     DeleteFile = Err.Number = 0
+    Set fso = Nothing
+End Function
+
+Public Function fsoFolderExists(strPath As String) As Boolean
+    On Error Resume Next
+    Dim fso As Object ' As Scripting.FileSystemObject
+    Set fso = CreateObject("Scripting.FileSystemObject") ' New Scripting.FileSystemObject
+    If fso.FolderExists(strPath) Then
+        fsoFolderExists = True
+    End If
     Set fso = Nothing
 End Function
 
@@ -110,7 +121,7 @@ Dim intFileNumber As Long
 Dim abyteByteArray() As Byte
 
     ' Delete existing file if needed
-    If LenB(Dir(strFilePath)) <> 0 Then _
+    If LenB(dir(strFilePath)) <> 0 Then _
         Kill strFilePath
 
     ' Get free file number
@@ -141,7 +152,6 @@ HandleError:
     End Select
 
 End Sub
-
 
 Public Sub OpenFileWithExplorer(ByRef strFilePath As String, Optional ByRef fReadOnly As Boolean = True)
     Dim wshShell
