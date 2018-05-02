@@ -6,3 +6,6 @@ build
 # Ignore scratch work and other files
 _scratch
 .DS_Store
+
+# Directories to ignore
+/TransformJsonDataToSheetsExample/[Aa]rchive
