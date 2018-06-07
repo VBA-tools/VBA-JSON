@@ -348,7 +348,7 @@ Public Function ConvertToJson(ByVal JsonValue As Variant, Optional ByVal Whitesp
 
         json_BufferAppend json_Buffer, json_Indentation & "]", json_BufferPosition, json_BufferLength
 
-        ConvertToJson = json_BufferToString(json_Buffer, json_BufferPosition, json_BufferLength)
+        ConvertToJson = json_BufferToString(json_Buffer, json_BufferPosition)
 
     ' Dictionary or Collection
     Case VBA.vbObject
@@ -441,7 +441,7 @@ Public Function ConvertToJson(ByVal JsonValue As Variant, Optional ByVal Whitesp
             json_BufferAppend json_Buffer, json_Indentation & "]", json_BufferPosition, json_BufferLength
         End If
 
-        ConvertToJson = json_BufferToString(json_Buffer, json_BufferPosition, json_BufferLength)
+        ConvertToJson = json_BufferToString(json_Buffer, json_BufferPosition)
     Case VBA.vbInteger, VBA.vbLong, VBA.vbSingle, VBA.vbDouble, VBA.vbCurrency, VBA.vbDecimal
         ' Number (use decimals for numbers)
         ConvertToJson = VBA.Replace(JsonValue, ",", ".")
@@ -591,7 +591,7 @@ Private Function json_ParseString(json_String As String, ByRef json_Index As Lon
                 json_Index = json_Index + 4
             End Select
         Case json_Quote
-            json_ParseString = json_BufferToString(json_Buffer, json_BufferPosition, json_BufferLength)
+            json_ParseString = json_BufferToString(json_Buffer, json_BufferPosition)
             json_Index = json_Index + 1
             Exit Function
         Case Else
@@ -733,7 +733,7 @@ Private Function json_Encode(ByVal json_Text As Variant) As String
         json_BufferAppend json_Buffer, json_Char, json_BufferPosition, json_BufferLength
     Next json_Index
 
-    json_Encode = json_BufferToString(json_Buffer, json_BufferPosition, json_BufferLength)
+    json_Encode = json_BufferToString(json_Buffer, json_BufferPosition)
 End Function
 
 Private Function json_Peek(json_String As String, ByVal json_Index As Long, Optional json_NumberOfCharacters As Long = 1) As String
@@ -760,7 +760,6 @@ Private Function json_StringIsLargeNumber(json_String As Variant) As Boolean
     ' Length with be at least 16 characters and assume will be less than 100 characters
     If json_Length >= 16 And json_Length <= 100 Then
         Dim json_CharCode As String
-        Dim json_Index As Long
 
         json_StringIsLargeNumber = True
 
@@ -854,7 +853,7 @@ Private Sub json_BufferAppend(ByRef json_Buffer As String, _
     json_BufferPosition = json_BufferPosition + json_AppendLength
 End Sub
 
-Private Function json_BufferToString(ByRef json_Buffer As String, ByVal json_BufferPosition As Long, ByVal json_BufferLength As Long) As String
+Private Function json_BufferToString(ByRef json_Buffer As String, ByVal json_BufferPosition As Long) As String
     If json_BufferPosition > 0 Then
         json_BufferToString = VBA.Left$(json_Buffer, json_BufferPosition)
     End If
