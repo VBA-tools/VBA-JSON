@@ -725,8 +725,10 @@ Private Function json_Encode(ByVal json_Text As Variant) As String
         Case 9
             ' tab -> 9 -> \t
             json_Char = "\t"
-        Case 0 To 31, 127 To 65535
+        Case 0 To 31, 127, 256 To 65535
             ' Non-ascii characters -> convert to 4-digit hex
+            ' Keep ASCII Codes (included extended) i.e. 32-126 & 128-255
+            ' http://www.asciitable.com/
             json_Char = "\u" & VBA.Right$("0000" & VBA.Hex$(json_AscCode), 4)
         End Select
 
