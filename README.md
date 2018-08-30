@@ -9,6 +9,10 @@ Tested in Windows Excel 2013 and Excel for Mac 2011, but should apply to 2007+.
 - For Windows-only support, include a reference to "Microsoft Scripting Runtime"
 - For Mac and Windows support, include [VBA-Dictionary](https://github.com/VBA-tools/VBA-Dictionary)
 
+<a href="https://www.patreon.com/timhall">
+  <img src="https://timhall.github.io/assets/donate-patreon@2x.png" width="217" alt="Donate">
+</a>
+
 # Examples
 
 ```vb
