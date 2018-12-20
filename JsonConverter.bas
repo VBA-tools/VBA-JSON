@@ -533,6 +533,20 @@ Private Function json_ParseValue(json_String As String, ByRef json_Index As Long
         ElseIf VBA.Mid$(json_String, json_Index, 4) = "null" Then
             json_ParseValue = Null
             json_Index = json_Index + 4
+        '#alex_start -----------------------------------------------------------------------------------
+        ElseIf JsonOptions.AllowUnquotedKeys Then
+            Dim json_Char As String
+            Do While json_Index > 0 And json_Index <= Len(json_String)
+                json_Char = VBA.Mid$(json_String, json_Index, 1)
+                If (json_Char <> " ") And (json_Char <> ",") And (json_Char <> "}") And (json_Char <> "]") Then
+                    json_ParseValue = json_ParseValue & json_Char
+                    json_Index = json_Index + 1
+                Else
+                    If IsNumeric(json_ParseValue) Then json_ParseValue = VBA.Val(json_ParseValue)
+                    Exit Do
+                End If
+            Loop
+        '#alex_end -----------------------------------------------------------------------------------
         ElseIf VBA.InStr("+-0123456789", VBA.Mid$(json_String, json_Index, 1)) Then
             json_ParseValue = json_ParseNumber(json_String, json_Index)
         Else
