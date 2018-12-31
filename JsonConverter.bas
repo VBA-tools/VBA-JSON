@@ -533,10 +533,10 @@ Private Function json_ParseValue(json_String As String, ByRef json_Index As Long
                     json_ParseValue = json_ParseValue & json_Char
                     json_Index = json_Index + 1
                 Else  'once finished:
+                    If IsNumeric(json_ParseValue) Then json_ParseValue = VBA.Val(json_ParseValue)
                     If LCase(json_ParseValue) = "true" Then json_ParseValue = True
                     If LCase(json_ParseValue) = "false" Then json_ParseValue = False
                     If LCase(json_ParseValue) = "null" Then json_ParseValue = Null
-                    If IsNumeric(json_ParseValue) Then json_ParseValue = VBA.Val(json_ParseValue)
                     Exit Do
                 End If
             Loop
