@@ -380,9 +380,9 @@ Public Function ConvertToJson(ByVal JsonValue As Variant, Optional ByVal Whitesp
                     End If
 
                     If json_PrettyPrint Then
-                        json_Converted = vbNewLine & json_Indentation & """" & json_Key & """: " & json_Converted
+                        json_Converted = vbNewLine & json_Indentation & """" & json_Encode(json_Key) & """: " & json_Converted
                     Else
-                        json_Converted = """" & json_Key & """:" & json_Converted
+                        json_Converted = """" & json_Encode(json_Key) & """:" & json_Converted
                     End If
 
                     json_BufferAppend json_Buffer, json_Converted, json_BufferPosition, json_BufferLength
