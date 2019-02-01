@@ -524,7 +524,24 @@ Private Function json_ParseValue(json_String As String, ByRef json_Index As Long
     Case """", "'"
         json_ParseValue = json_ParseString(json_String, json_Index)
     Case Else
-        If VBA.Mid$(json_String, json_Index, 4) = "true" Then
+        'Start - Unquoted string (asopenag) -----------------------------------------------------------------------------------
+        If JsonOptions.AllowUnquotedKeys Then
+            Dim json_Char As String
+            Do While json_Index > 0 And json_Index <= Len(json_String)
+                json_Char = VBA.Mid$(json_String, json_Index, 1)
+                If (json_Char <> " ") And (json_Char <> ",") And (json_Char <> "}") And (json_Char <> "]") Then
+                    json_ParseValue = json_ParseValue & json_Char
+                    json_Index = json_Index + 1
+                Else  'once finished:
+                    If IsNumeric(json_ParseValue) Then json_ParseValue = VBA.Val(json_ParseValue)
+                    If LCase(json_ParseValue) = "true" Then json_ParseValue = True
+                    If LCase(json_ParseValue) = "false" Then json_ParseValue = False
+                    If LCase(json_ParseValue) = "null" Then json_ParseValue = Null
+                    Exit Do
+                End If
+            Loop
+        'End - Unquoted string (asopenag) -----------------------------------------------------------------------------------
+        ElseIf VBA.Mid$(json_String, json_Index, 4) = "true" Then
             json_ParseValue = True
             json_Index = json_Index + 4
         ElseIf VBA.Mid$(json_String, json_Index, 5) = "false" Then
