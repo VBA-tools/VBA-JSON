@@ -1,8 +1,3 @@
-# This Fork (SEAKINTRUTH)
-The purpose of this fork is to provide a working example of the upstream repository found at [VBA-tools/VBA-JSON](https://github.com/VBA-tools/VBA-JSON). 
-
-The intent is not to superseed the upstream repository.
-
 ## Installation of the Example Workbook
 Download the workbook [TransformJsonFileFromWeb.xlsm](TransformJsonDataToSheetsExample/TransformJsonFileFromWeb.xlsm) from [source](TransformJsonDataToSheetsExample) or the [latest release](https://github.com/seakintruth/VBA-JSON/releases)
 
