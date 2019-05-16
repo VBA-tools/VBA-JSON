@@ -1,6 +1,6 @@
 Attribute VB_Name = "JsonConverter"
 ''
-' VBA-JSON v2.3.0
+' VBA-JSON v2.3.1
 ' (c) Tim Hall - https://github.com/VBA-tools/VBA-JSON
 '
 ' JSON Converter for VBA
@@ -51,13 +51,13 @@ Option Explicit
 #If VBA7 Then
 
 ' 64-bit Mac (2016)
-Private Declare PtrSafe Function utc_popen Lib "libc.dylib" Alias "popen" _
+Private Declare PtrSafe Function utc_popen Lib "/usr/lib/libc.dylib" Alias "popen" _
     (ByVal utc_Command As String, ByVal utc_Mode As String) As LongPtr
-Private Declare PtrSafe Function utc_pclose Lib "libc.dylib" Alias "pclose" _
+Private Declare PtrSafe Function utc_pclose Lib "/usr/lib/libc.dylib" Alias "pclose" _
     (ByVal utc_File As LongPtr) As LongPtr
-Private Declare PtrSafe Function utc_fread Lib "libc.dylib" Alias "fread" _
+Private Declare PtrSafe Function utc_fread Lib "/usr/lib/libc.dylib" Alias "fread" _
     (ByVal utc_Buffer As String, ByVal utc_Size As LongPtr, ByVal utc_Number As LongPtr, ByVal utc_File As LongPtr) As LongPtr
-Private Declare PtrSafe Function utc_feof Lib "libc.dylib" Alias "feof" _
+Private Declare PtrSafe Function utc_feof Lib "/usr/lib/libc.dylib" Alias "feof" _
     (ByVal utc_File As LongPtr) As LongPtr
 
 #Else
@@ -862,7 +862,7 @@ Private Function json_BufferToString(ByRef json_Buffer As String, ByVal json_Buf
 End Function
 
 ''
-' VBA-UTC v1.0.5
+' VBA-UTC v1.0.6
 ' (c) Tim Hall - https://github.com/VBA-tools/VBA-UtcConverter
 '
 ' UTC/ISO 8601 Converter for VBA
