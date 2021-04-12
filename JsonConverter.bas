@@ -1,6 +1,6 @@
 Attribute VB_Name = "JsonConverter"
 ''
-' VBA-JSON v2.3.1
+' VBA-JSON v2.3.2
 ' (c) Tim Hall - https://github.com/VBA-tools/VBA-JSON
 '
 ' JSON Converter for VBA
@@ -849,7 +849,10 @@ Private Sub json_BufferAppend(ByRef json_Buffer As String, _
 
     ' Note: Namespacing with VBA.Mid$ doesn't work properly here, throwing compile error:
     ' Function call on left-hand side of assignment must return Variant or Object
-    Mid$(json_Buffer, json_BufferPosition + 1, json_AppendLength) = CStr(json_Append)
+    If json_AppendLength > 0 Then
+        Mid$(json_Buffer, json_BufferPosition + 1, json_AppendLength) = CStr(json_Append)
+    End If
+    
     json_BufferPosition = json_BufferPosition + json_AppendLength
 End Sub
 
