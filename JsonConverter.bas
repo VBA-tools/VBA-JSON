@@ -154,6 +154,10 @@ Private Type json_Options
 
     ' The solidus (/) is not required to be escaped, use this option to escape them as \/ in ConvertToJson
     EscapeSolidus As Boolean
+                        
+    'before version 2.3.1 dates where converted to UTC in ConvertToJson method, but not when json was parsed. 
+    'Convert datetime values to UTC/ISO (false, slower) or dont change local <-> global times (true, faster)
+    DontConvertDates As Boolean 
 End Type
 Public JsonOptions As json_Options
 
@@ -230,8 +234,11 @@ Public Function ConvertToJson(ByVal JsonValue As Variant, Optional ByVal Whitesp
         ConvertToJson = "null"
     Case VBA.vbDate
         ' Date
-        json_DateStr = ConvertToIso(VBA.CDate(JsonValue))
-
+        If Not DontConvertDates Then
+            json_DateStr = ConvertToIso(VBA.CDate(JsonValue))
+        Else
+            json_DateStr = VBA.CDate(JsonValue)
+        End If
         ConvertToJson = """" & json_DateStr & """"
     Case VBA.vbString
         ' String (or large number encoded as string)
@@ -592,6 +599,8 @@ Private Function json_ParseString(json_String As String, ByRef json_Index As Lon
             End Select
         Case json_Quote
             json_ParseString = json_BufferToString(json_Buffer, json_BufferPosition)
+            'only test for same ISO format in ConvertToIso method
+            If Not DontConvertDates Then If json_ParseString Like "####-##-##T##:##:##.###Z" Then json_ParseString = ParseIso(json_ParseString)
             json_Index = json_Index + 1
             Exit Function
         Case Else
