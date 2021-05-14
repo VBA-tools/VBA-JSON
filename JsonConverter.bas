@@ -592,6 +592,8 @@ Private Function json_ParseString(json_String As String, ByRef json_Index As Lon
             End Select
         Case json_Quote
             json_ParseString = json_BufferToString(json_Buffer, json_BufferPosition)
+            'only test for same ISO format in ConvertToIso method
+            If json_ParseString Like "####-##-##T##:##:##.###Z" Then json_ParseString = ParseIso(json_ParseString)
             json_Index = json_Index + 1
             Exit Function
         Case Else
