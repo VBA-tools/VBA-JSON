@@ -463,7 +463,7 @@ Private Function json_ParseObject(json_String As String, ByRef json_Index As Lon
     Dim json_NextChar As String
 
 #If Mac Then
-    Set json_ParseObject = New Disctionary
+    Set json_ParseObject = New Dictionary
 #else
     Set json_ParseObject = CreateObject("Scripting.Dictionary")
 #end if
