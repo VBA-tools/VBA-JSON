@@ -458,11 +458,11 @@ End Function
 ' Private Functions
 ' ============================================= '
 
-Private Function json_ParseObject(json_String As String, ByRef json_Index As Long) As Dictionary
+Private Function json_ParseObject(json_String As String, ByRef json_Index As Long) As Object
     Dim json_Key As String
     Dim json_NextChar As String
 
-    Set json_ParseObject = New Dictionary
+    Set json_ParseObject = CreateObject("Scripting.Dictionary")
     json_SkipSpaces json_String, json_Index
     If VBA.Mid$(json_String, json_Index, 1) <> "{" Then
         Err.Raise 10001, "JSONConverter", json_ParseErrorMessage(json_String, json_Index, "Expecting '{'")
