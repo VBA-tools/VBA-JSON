@@ -1,6 +1,6 @@
 Attribute VB_Name = "JsonConverter"
 ''
-' VBA-JSON v2.3.1
+' VBA-JSON v2.3.2
 ' (c) Tim Hall - https://github.com/VBA-tools/VBA-JSON
 '
 ' JSON Converter for VBA
@@ -44,6 +44,8 @@ Attribute VB_Name = "JsonConverter"
 ' SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ '
 Option Explicit
+
+#Const UseScriptingDictionaryIfAvailable = True
 
 ' === VBA-UTC Headers
 #If Mac Then
@@ -454,15 +456,55 @@ Public Function ConvertToJson(ByVal JsonValue As Variant, Optional ByVal Whitesp
     End Select
 End Function
 
+''
+' Convert part of JSON string to Variant (Dictionary/Collection/Boolean/String/Double/Null)
+'
+' @method ParseJsonPart
+' @param {String} json_String
+' @paramArray {Variant} keys()
+' @return {Variant} (Dictionary or Collection or Boolean or String or Double or Null)
+' use ParseJsonPart(json_String "foo", "bar", ..."baz")
+' like ParseJson(json_String)("foo")("bar")...("baz") but without parse all json_String
+''
+Public Function ParseJsonPart(ByVal JsonString As String, ParamArray keys()) As Variant
+    Dim json_Index As Long
+    Dim key
+    Dim key_Index As Long
+    json_Index = 1
+    
+    ' Remove vbCr, vbLf, and vbTab from json_String
+    JsonString = VBA.Replace(VBA.Replace(VBA.Replace(JsonString, VBA.vbCr, ""), VBA.vbLf, ""), VBA.vbTab, "")
+    On Error GoTo ErrorHandling
+    For Each key In keys
+        If JsonOptions.AllowUnquotedKeys Then
+            key_Index = VBA.InStr(json_Index, JsonString, key)
+        Else
+            key_Index = VBA.InStr(json_Index, JsonString, """" & key & """")
+            If key_Index = 0 Then key_Index = VBA.InStr(json_Index, JsonString, "'" & key & "'")
+        End If
+        If key_Index = 0 Then GoTo ErrorHandling
+        json_Index = key_Index
+        json_ParseKey JsonString, json_Index
+    Next
+    ParseJsonPart = json_ParseValue(JsonString, json_Index)
+    Exit Function
+ErrorHandling:
+    ParseJsonPart = Null
+End Function
+
 ' ============================================= '
 ' Private Functions
 ' ============================================= '
-
+#If Mac Or Not UseScriptingDictionaryIfAvailable Then
 Private Function json_ParseObject(json_String As String, ByRef json_Index As Long) As Dictionary
+    Set json_ParseObject = New Dictionary
+#Else
+Private Function json_ParseObject(json_String As String, ByRef json_Index As Long) As Object
+    Set json_ParseObject = CreateObject("Scripting.Dictionary")
+#End If
     Dim json_Key As String
     Dim json_NextChar As String
 
-    Set json_ParseObject = New Dictionary
     json_SkipSpaces json_String, json_Index
     If VBA.Mid$(json_String, json_Index, 1) <> "{" Then
         Err.Raise 10001, "JSONConverter", json_ParseErrorMessage(json_String, json_Index, "Expecting '{'")
@@ -1121,3 +1163,4 @@ Private Function utc_SystemTimeToDate(utc_Value As utc_SYSTEMTIME) As Date
 End Function
 
 #End If
+
