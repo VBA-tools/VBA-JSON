@@ -486,7 +486,13 @@ Public Function ParseJsonPart(ByVal JsonString As String, ParamArray keys()) As 
         json_Index = key_Index
         json_ParseKey JsonString, json_Index
     Next
-    ParseJsonPart = json_ParseValue(JsonString, json_Index)
+    json_SkipSpaces JsonString, json_Index
+    Select Case VBA.Mid$(JsonString, json_Index, 1)
+    Case "{", "["
+        Set ParseJsonPart = json_ParseValue(JsonString, json_Index)
+    Case Else
+        ParseJsonPart = json_ParseValue(JsonString, json_Index)
+    End Select
     Exit Function
 ErrorHandling:
     ParseJsonPart = Null
