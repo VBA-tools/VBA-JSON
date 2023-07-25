@@ -154,6 +154,9 @@ Private Type json_Options
 
     ' The solidus (/) is not required to be escaped, use this option to escape them as \/ in ConvertToJson
     EscapeSolidus As Boolean
+    
+    ' Allow Unicode characters in JSON text. Set to True to use native Unicode or false for escaped values.
+    AllowUnicodeChars As Boolean
 End Type
 Public JsonOptions As json_Options
 
@@ -575,7 +578,7 @@ Private Function json_ParseString(json_String As String, ByRef json_Index As Lon
                 json_BufferAppend json_Buffer, vbFormFeed, json_BufferPosition, json_BufferLength
                 json_Index = json_Index + 1
             Case "n"
-                json_BufferAppend json_Buffer, vbCrLf, json_BufferPosition, json_BufferLength
+                json_BufferAppend json_Buffer, vbLf, json_BufferPosition, json_BufferLength
                 json_Index = json_Index + 1
             Case "r"
                 json_BufferAppend json_Buffer, vbCr, json_BufferPosition, json_BufferLength
@@ -725,9 +728,14 @@ Private Function json_Encode(ByVal json_Text As Variant) As String
         Case 9
             ' tab -> 9 -> \t
             json_Char = "\t"
-        Case 0 To 31, 127 To 65535
+        Case 0 To 31
             ' Non-ascii characters -> convert to 4-digit hex
             json_Char = "\u" & VBA.Right$("0000" & VBA.Hex$(json_AscCode), 4)
+        Case 127 To 65535
+            ' Unicode character range
+            If Not JsonOptions.AllowUnicodeChars Then
+                json_Char = "\u" & VBA.Right$("0000" & VBA.Hex$(json_AscCode), 4)
+            End If
         End Select
 
         json_BufferAppend json_Buffer, json_Char, json_BufferPosition, json_BufferLength
