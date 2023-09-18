@@ -490,28 +490,51 @@ Private Function json_ParseObject(json_String As String, ByRef json_Index As Lon
     End If
 End Function
 
-Private Function json_ParseArray(json_String As String, ByRef json_Index As Long) As Collection
-    Set json_ParseArray = New Collection
+Private Function json_ParseArray(json_String As String, ByRef json_Index As Long) As Variant
+    Dim jsonArray() As Variant
+    Dim arrayIndex As Long
 
     json_SkipSpaces json_String, json_Index
     If VBA.Mid$(json_String, json_Index, 1) <> "[" Then
         Err.Raise 10001, "JSONConverter", json_ParseErrorMessage(json_String, json_Index, "Expecting '['")
     Else
         json_Index = json_Index + 1
+        arrayIndex = 0
 
         Do
             json_SkipSpaces json_String, json_Index
             If VBA.Mid$(json_String, json_Index, 1) = "]" Then
                 json_Index = json_Index + 1
-                Exit Function
+
+                If arrayIndex > 0 Then
+                    ReDim Preserve jsonArray(0 To arrayIndex - 1)
+                End If
+
+                If arrayIndex = 0 Then
+                    jsonArray = Array()
+                End If
+
+                Exit Do
             ElseIf VBA.Mid$(json_String, json_Index, 1) = "," Then
                 json_Index = json_Index + 1
                 json_SkipSpaces json_String, json_Index
             End If
 
-            json_ParseArray.Add json_ParseValue(json_String, json_Index)
+            ReDim Preserve jsonArray(0 To arrayIndex)
+
+            json_SkipSpaces json_String, json_Index
+            Select Case VBA.Mid$(json_String, json_Index, 1)
+            Case "{"
+                Set jsonArray(arrayIndex) = json_ParseValue(json_String, json_Index)
+            Case Else
+                jsonArray(arrayIndex) = json_ParseValue(json_String, json_Index)
+            End Select
+
+            arrayIndex = arrayIndex + 1
         Loop
     End If
+
+    json_ParseArray = jsonArray
 End Function
 
 Private Function json_ParseValue(json_String As String, ByRef json_Index As Long) As Variant
