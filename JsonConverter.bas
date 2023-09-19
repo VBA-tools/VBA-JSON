@@ -507,6 +507,8 @@ Private Function json_ParseArray(json_String As String, ByRef json_Index As Long
             ElseIf VBA.Mid$(json_String, json_Index, 1) = "," Then
                 json_Index = json_Index + 1
                 json_SkipSpaces json_String, json_Index
+            ElseIf VBA.Mid$(json_String, json_Index, 1) = vbNullString Then
+                Err.Raise 10001, "JSONConverter", json_ParseErrorMessage(json_String, json_Index, "Expecting closing string or array")
             End If
 
             json_ParseArray.Add json_ParseValue(json_String, json_Index)
