@@ -224,8 +224,19 @@ Public Function ConvertToJson(ByVal JsonValue As Variant, Optional ByVal Whitesp
     json_UBound2D = -1
     json_IsFirstItem2D = True
     json_PrettyPrint = Not IsMissing(Whitespace)
+    
+    Dim VarType As Integer
+    VarType = VBA.VarType(JsonValue)
+    
+    ' Hack for bug in VBA/COM/.Net
+    ' Even though Stack/Queue are objects, varType returns 8(string).
+    ' Override it to 9(Object)
+    
+    If TypeName(JsonValue) = "Stack" Or TypeName(JsonValue) = "Queue" Then
+        VarType = 9
+    End If
 
-    Select Case VBA.VarType(JsonValue)
+    Select Case VarType
     Case VBA.vbNull
         ConvertToJson = "null"
     Case VBA.vbDate
@@ -361,9 +372,20 @@ Public Function ConvertToJson(ByVal JsonValue As Variant, Optional ByVal Whitesp
         End If
 
         ' Dictionary
-        If VBA.TypeName(JsonValue) = "Dictionary" Then
+        If VBA.TypeName(JsonValue) = "Dictionary" Or VBA.TypeName(JsonValue) = "Hashtable" Or VBA.TypeName(JsonValue) = "SortedList" Then
+            Dim dKeys As Variant
+            If VBA.TypeName(JsonValue) = "Hashtable" Then
+                Set dKeys = CreateObject("System.Collections.ArrayList")
+                dKeys.AddRange JsonValue.Keys
+            ElseIf VBA.TypeName(JsonValue) = "Dictionary" Then
+                dKeys = JsonValue.Keys()
+            ElseIf VBA.TypeName(JsonValue) = "SortedList" Then
+                Set dKeys = CreateObject("System.Collections.ArrayList")
+                dKeys.AddRange JsonValue.GetKeyList
+            End If
+            
             json_BufferAppend json_Buffer, "{", json_BufferPosition, json_BufferLength
-            For Each json_Key In JsonValue.Keys
+            For Each json_Key In dKeys
                 ' For Objects, undefined (Empty/Nothing) is not added to object
                 json_Converted = ConvertToJson(JsonValue(json_Key), Whitespace, json_CurrentIndentation + 1)
                 If json_Converted = "" Then
@@ -402,7 +424,10 @@ Public Function ConvertToJson(ByVal JsonValue As Variant, Optional ByVal Whitesp
             json_BufferAppend json_Buffer, json_Indentation & "}", json_BufferPosition, json_BufferLength
 
         ' Collection
-        ElseIf VBA.TypeName(JsonValue) = "Collection" Then
+        ElseIf VBA.TypeName(JsonValue) = "Collection" Or VBA.TypeName(JsonValue) = "ArrayList" Or VBA.TypeName(JsonValue) = "Stack" Or TypeName(JsonValue) = "Queue" Then
+            If VBA.TypeName(JsonValue) = "Stack" Or TypeName(JsonValue) = "Queue" Then
+                JsonValue = JsonValue.ToArray
+            End If
             json_BufferAppend json_Buffer, "[", json_BufferPosition, json_BufferLength
             For Each json_Value In JsonValue
                 If json_IsFirstItem Then

@@ -202,6 +202,37 @@ Public Function Specs() As SpecSuite
         .Expect(JsonString).ToEqual "[1,3.14,""abc"",false,[1,2,3],{""a"":1},null]"
     End With
     
+    With Specs.It("should convert System.Collections.* to string (BitArray not supported)")
+        Set JsonObject = New Collection
+        JsonObject.Add (CreateObject("System.Collections.ArrayList"))
+        JsonObject(1).Add ("1")
+        JsonObject(1).Add ("2")
+        JsonObject(1).Add ("3")
+        Dim obj As Object
+        Set obj = CreateObject("System.Collections.HashTable")
+        obj.Add "a", "Algeria"
+        obj.Add "b", "Bermuda"
+        JsonObject.Add obj
+        Set obj = CreateObject("System.Collections.SortedList")
+        obj.Add "z", "Z"
+        obj.Add "y", "Y"
+        obj.Add "x", "X"
+        JsonObject.Add obj
+        Set obj = CreateObject("System.Collections.Stack")
+        obj.Push "aa"
+        obj.Push "bb"
+        obj.Push "cc"
+        JsonObject.Add obj
+        Set obj = CreateObject("System.Collections.Queue")
+        obj.Enqueue "a1"
+        obj.Enqueue "b2"
+        obj.Enqueue "c3"
+        JsonObject.Add obj
+        JsonString = JsonConverter.ConvertToJson(JsonObject)
+        .Expect(JsonString).ToEqual "[[""1"",""2"",""3""],{""a"":""Algeria"",""b"":""Bermuda""},{""x"":""X"",""y"":""Y"",""z"":""Z""},[""cc"",""bb"",""aa""],[""a1"",""b2"",""c3""]]"
+    End With
+    
+    
     With Specs.It("should convert array to string")
         JsonString = JsonConverter.ConvertToJson(Array(1, 3.14, "abc", False, Array(1, 2, 3)))
         .Expect(JsonString).ToEqual "[1,3.14,""abc"",false,[1,2,3]]"
